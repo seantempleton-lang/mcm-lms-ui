@@ -1,207 +1,262 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { api } from '../api'
+import { useEffect, useMemo, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { api } from '../api';
 
-function outcomePill(outcome){
-  if (outcome === 'COMPETENT') return <span className="pill good">✅ Competent</span>
-  if (outcome === 'NEEDS_FOLLOWUP') return <span className="pill warn">⚠ Needs follow-up</span>
-  return <span className="pill">—</span>
+function outcomePill(outcome) {
+  if (outcome === 'COMPETENT') return <span className="pill good">Competent</span>;
+  if (outcome === 'NEEDS_FOLLOWUP') return <span className="pill warn">Needs follow-up</span>;
+  return <span className="pill">-</span>;
+}
+
+function buildAssessmentMap(items) {
+  const map = {};
+  (items || []).forEach((item) => {
+    map[`${item.userId}|${item.competencyId}`] = {
+      outcome: item.outcome,
+      notes: item.notes || ''
+    };
+  });
+  return map;
+}
+
+function mapsMatch(left, right) {
+  const keys = new Set([...Object.keys(left), ...Object.keys(right)]);
+  for (const key of keys) {
+    const leftValue = left[key] || { outcome: '', notes: '' };
+    const rightValue = right[key] || { outcome: '', notes: '' };
+    if (leftValue.outcome !== rightValue.outcome || leftValue.notes !== rightValue.notes) {
+      return false;
+    }
+  }
+  return true;
 }
 
 export default function SessionRun() {
-  const { id } = useParams()
-  const [session, setSession] = useState(null)
-  const [module, setModule] = useState(null)
-  const [err, setErr] = useState('')
+  const { id } = useParams();
+  const [session, setSession] = useState(null);
+  const [module, setModule] = useState(null);
+  const [err, setErr] = useState('');
+  const [attendance, setAttendance] = useState({});
+  const [assessments, setAssessments] = useState({});
+  const [q, setQ] = useState('');
+  const [results, setResults] = useState([]);
+  const [adding, setAdding] = useState(false);
+  const [savingAtt, setSavingAtt] = useState(false);
+  const [savingAss, setSavingAss] = useState(false);
+  const [awarding, setAwarding] = useState(false);
 
-  const [attendance, setAttendance] = useState({})
-  const [assessments, setAssessments] = useState({})
+  async function load() {
+    setErr('');
+    try {
+      const s = await api(`/sessions/${id}`);
+      setSession(s);
+      const mods = await api('/modules');
+      const m = (mods || []).find((item) => item.id === s.moduleId);
+      setModule(m || null);
 
-  // NEW: user lookup
-  const [q, setQ] = useState('')
-  const [results, setResults] = useState([])
-  const [adding, setAdding] = useState(false)
-
-  const [savingAtt, setSavingAtt] = useState(false)
-  const [savingAss, setSavingAss] = useState(false)
-  const [awarding, setAwarding] = useState(false)
-
-  async function load(){
-    setErr('')
-    try{
-      const s = await api(`/sessions/${id}`)
-      setSession(s)
-      const mods = await api('/modules')
-      const m = (mods || []).find(x => x.id === s.moduleId)
-      setModule(m || null)
-
-      const att = {}
-      ;(s.attendance || []).forEach(a => { att[a.userId] = a.attended })
-      setAttendance(att)
-
-      const ass = {}
-      ;(s.assessments || []).forEach(a => {
-        ass[`${a.userId}|${a.competencyId}`] = { outcome: a.outcome, notes: a.notes || '' }
-      })
-      setAssessments(ass)
-    } catch(e){
-      setErr('Failed to load session')
-    }
-  }
-
-  useEffect(()=>{ load() }, [id])
-
-  const competencies = useMemo(()=> (module?.competencies || []).map(mc => mc.competency), [module])
-
-  const attendees = useMemo(()=>{
-    return (session?.attendance || []).map(a => ({
-      userId: a.userId,
-      name: a.user?.name || a.userId,
-      email: a.user?.email,
-      attended: attendance[a.userId] ?? a.attended ?? true
-    }))
-  }, [session, attendance])
-
-  function setAtt(userId, val){
-    setAttendance(prev => ({ ...prev, [userId]: val }))
-  }
-
-  function setAss(userId, competencyId, patch){
-    const key = `${userId}|${competencyId}`
-    setAssessments(prev => ({
-      ...prev,
-      [key]: { outcome: prev[key]?.outcome || '', notes: prev[key]?.notes || '', ...patch }
-    }))
-  }
-
-  async function searchUsers(){
-    try{
-      const data = await api(`/users?q=${encodeURIComponent(q)}`)
-      setResults(data || [])
+      const nextAttendance = {};
+      (s.attendance || []).forEach((item) => {
+        nextAttendance[item.userId] = item.attended;
+      });
+      setAttendance(nextAttendance);
+      setAssessments(buildAssessmentMap(s.assessments));
     } catch {
-      setResults([])
+      setErr('Failed to load session');
     }
   }
 
-  async function addAttendee(user){
-    if (!session) return
-    setAdding(true)
-    setErr('')
-    try{
-      // create attendance row via attendance endpoint
+  useEffect(() => {
+    load();
+  }, [id]);
+
+  const competencies = useMemo(() => {
+    return (module?.competencies || []).map((item) => item.competency).filter(Boolean);
+  }, [module]);
+
+  const attendees = useMemo(() => {
+    return (session?.attendance || []).map((item) => ({
+      userId: item.userId,
+      name: item.user?.name || item.userId,
+      email: item.user?.email,
+      attended: attendance[item.userId] ?? item.attended ?? true
+    }));
+  }, [session, attendance]);
+
+  const persistedAssessments = useMemo(() => buildAssessmentMap(session?.assessments), [session]);
+  const hasUnsavedAssessments = useMemo(() => !mapsMatch(assessments, persistedAssessments), [assessments, persistedAssessments]);
+  const hasPersistedCompetentOutcomes = useMemo(() => {
+    return (session?.assessments || []).some((item) => item.outcome === 'COMPETENT');
+  }, [session]);
+
+  function setAtt(userId, value) {
+    setAttendance((current) => ({ ...current, [userId]: value }));
+  }
+
+  function setAss(userId, competencyId, patch) {
+    const key = `${userId}|${competencyId}`;
+    setAssessments((current) => ({
+      ...current,
+      [key]: { outcome: current[key]?.outcome || '', notes: current[key]?.notes || '', ...patch }
+    }));
+  }
+
+  async function searchUsers() {
+    try {
+      const data = await api(`/users?q=${encodeURIComponent(q)}`);
+      setResults(data || []);
+    } catch {
+      setResults([]);
+    }
+  }
+
+  async function addAttendee(user) {
+    if (!session) return;
+    setAdding(true);
+    setErr('');
+    try {
       await api(`/sessions/${session.id}/attendance`, {
-        method:'POST',
+        method: 'POST',
         body: JSON.stringify({ attendees: [{ userId: user.id, attended: true }] })
-      })
-      await load()
-      setQ('')
-      setResults([])
+      });
+      await load();
+      setQ('');
+      setResults([]);
     } catch {
-      setErr('Failed to add attendee')
+      setErr('Failed to add attendee');
     } finally {
-      setAdding(false)
+      setAdding(false);
     }
   }
 
-  async function saveAttendance(){
-    if (!session) return
-    setSavingAtt(true)
-    setErr('')
-    try{
-      const payload = { attendees: attendees.map(a => ({ userId: a.userId, attended: attendance[a.userId] ?? true })) }
-      await api(`/sessions/${session.id}/attendance`, { method:'POST', body: JSON.stringify(payload) })
-      await load()
-    } catch{
-      setErr('Failed to save attendance')
-    } finally {
-      setSavingAtt(false)
-    }
-  }
-
-  async function saveAssessments(){
-    if (!session) return
-    setSavingAss(true)
-    setErr('')
-    try{
-      const list = []
-      attendees.forEach(a => {
-        competencies.forEach(c => {
-          const key = `${a.userId}|${c.id}`
-          const v = assessments[key]
-          if (v?.outcome) list.push({ userId: a.userId, competencyId: c.id, outcome: v.outcome, notes: v.notes || '' })
-        })
-      })
-      if (!list.length) throw new Error('No assessments')
-      await api(`/sessions/${session.id}/assessments`, { method:'POST', body: JSON.stringify({ assessments: list }) })
-      await load()
+  async function saveAttendance() {
+    if (!session) return;
+    setSavingAtt(true);
+    setErr('');
+    try {
+      const payload = {
+        attendees: attendees.map((item) => ({
+          userId: item.userId,
+          attended: attendance[item.userId] ?? true
+        }))
+      };
+      await api(`/sessions/${session.id}/attendance`, { method: 'POST', body: JSON.stringify(payload) });
+      await load();
     } catch {
-      setErr('Failed to save assessments')
+      setErr('Failed to save attendance');
     } finally {
-      setSavingAss(false)
+      setSavingAtt(false);
     }
   }
 
-  async function awardCompetencies(){
-    if (!session) return
-    setAwarding(true)
-    setErr('')
-    try{
-      const awards = []
-      attendees.forEach(a => {
-        competencies.forEach(c => {
-          const key = `${a.userId}|${c.id}`
-          const v = assessments[key]
-          if (v?.outcome === 'COMPETENT') awards.push({ userId: a.userId, competencyId: c.id, notes: v.notes || '' })
-        })
-      })
-      if (!awards.length) throw new Error('No competent outcomes')
-      for (const aw of awards) {
-        await api(`/competencies/${aw.competencyId}/award`, {
-          method:'POST',
-          body: JSON.stringify({ userId: aw.userId, evidenceType: 'SESSION', sessionId: session.id, notes: aw.notes })
-        })
-      }
-      await load()
+  async function saveAssessments() {
+    if (!session) return;
+    setSavingAss(true);
+    setErr('');
+    try {
+      const list = [];
+      attendees.forEach((attendee) => {
+        competencies.forEach((competency) => {
+          const key = `${attendee.userId}|${competency.id}`;
+          const value = assessments[key];
+          if (value?.outcome) {
+            list.push({
+              userId: attendee.userId,
+              competencyId: competency.id,
+              outcome: value.outcome,
+              notes: value.notes || ''
+            });
+          }
+        });
+      });
+      if (!list.length) throw new Error('No assessments');
+      await api(`/sessions/${session.id}/assessments`, { method: 'POST', body: JSON.stringify({ assessments: list }) });
+      await load();
     } catch {
-      setErr('Awarding failed (possible duplicates)')
+      setErr('Failed to save assessments');
     } finally {
-      setAwarding(false)
+      setSavingAss(false);
     }
   }
 
-  if (!session) return <div className="card"><p>Loading…</p></div>
+  async function awardCompetencies() {
+    if (!session) return;
+    if (hasUnsavedAssessments) {
+      setErr('Save assessments before awarding competencies');
+      return;
+    }
+
+    setAwarding(true);
+    setErr('');
+    try {
+      const awards = [];
+      (session.assessments || []).forEach((item) => {
+        if (item.outcome === 'COMPETENT') {
+          awards.push({
+            userId: item.userId,
+            competencyId: item.competencyId,
+            notes: item.notes || ''
+          });
+        }
+      });
+
+      if (!awards.length) throw new Error('No competent outcomes');
+
+      await api(`/sessions/${session.id}/awards`, {
+        method: 'POST',
+        body: JSON.stringify({ awards })
+      });
+      await load();
+    } catch {
+      setErr('Awarding failed');
+    } finally {
+      setAwarding(false);
+    }
+  }
+
+  if (!session) return <div className="card"><p>Loading...</p></div>;
 
   return (
     <div className="grid">
       <div className="card">
-        <div className="row" style={{justifyContent:'space-between', alignItems:'center'}}>
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <div className="h1">Run session</div>
-            <div style={{fontWeight:700}}>{session.module?.title}</div>
-            <div className="small">{new Date(session.date).toLocaleString()} · Facilitator: {session.facilitator?.name || '—'}</div>
+            <div style={{ fontWeight: 700 }}>{session.module?.title}</div>
+            <div className="small">
+              {new Date(session.date).toLocaleString()} | Facilitator: {session.facilitator?.name || '-'}
+            </div>
           </div>
           <Link className="btn ghost" to="/supervisor/sessions">Back</Link>
         </div>
-        {err && <p style={{color:'var(--bad)'}}>{err}</p>}
+        {err && <p style={{ color: 'var(--bad)' }}>{err}</p>}
+        {hasUnsavedAssessments && (
+          <p className="small">Assessments have changed locally. Save them before awarding competencies.</p>
+        )}
       </div>
 
       <div className="card">
         <div className="h2">Add attendee</div>
-        <p className="small">Search by name or email, then Add.</p>
-        <div className="row" style={{alignItems:'center'}}>
-          <input className="input" style={{flex:1}} value={q} onChange={e=>setQ(e.target.value)} placeholder="Search users…" />
+        <p className="small">Search by name or email, then add them to this session.</p>
+        <div className="row" style={{ alignItems: 'center' }}>
+          <input
+            className="input"
+            style={{ flex: 1 }}
+            value={q}
+            onChange={(event) => setQ(event.target.value)}
+            placeholder="Search users..."
+          />
           <button className="btn secondary" onClick={searchUsers} disabled={!q}>Search</button>
         </div>
         {!!results.length && (
-          <div className="grid" style={{marginTop:10, gap:10}}>
-            {results.map(u => (
-              <div key={u.id} className="card" style={{background:'var(--panel2)'}}>
-                <div className="row" style={{justifyContent:'space-between', alignItems:'center'}}>
+          <div className="grid" style={{ marginTop: 10, gap: 10 }}>
+            {results.map((user) => (
+              <div key={user.id} className="card" style={{ background: 'var(--panel2)' }}>
+                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <div style={{fontWeight:700}}>{u.name} <span className="badge">{u.role}</span></div>
-                    <div className="small">{u.email}</div>
+                    <div style={{ fontWeight: 700 }}>{user.name} <span className="badge">{user.role}</span></div>
+                    <div className="small">{user.email}</div>
                   </div>
-                  <button className="btn" disabled={adding} onClick={()=>addAttendee(u)}>Add</button>
+                  <button className="btn" disabled={adding} onClick={() => addAttendee(user)}>Add</button>
                 </div>
               </div>
             ))}
@@ -212,16 +267,20 @@ export default function SessionRun() {
       <div className="grid two">
         <div className="card">
           <div className="h2">Attendance</div>
-          <div className="grid" style={{gap:10}}>
-            {attendees.map(a => (
-              <div key={a.userId} className="card" style={{background:'var(--panel2)'}}>
-                <div className="row" style={{justifyContent:'space-between', alignItems:'center'}}>
+          <div className="grid" style={{ gap: 10 }}>
+            {attendees.map((attendee) => (
+              <div key={attendee.userId} className="card" style={{ background: 'var(--panel2)' }}>
+                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <div style={{fontWeight:700}}>{a.name}</div>
-                    <div className="small">{a.email || a.userId}</div>
+                    <div style={{ fontWeight: 700 }}>{attendee.name}</div>
+                    <div className="small">{attendee.email || attendee.userId}</div>
                   </div>
                   <label className="toggle">
-                    <input type="checkbox" checked={attendance[a.userId] ?? true} onChange={e=>setAtt(a.userId, e.target.checked)} />
+                    <input
+                      type="checkbox"
+                      checked={attendance[attendee.userId] ?? true}
+                      onChange={(event) => setAtt(attendee.userId, event.target.checked)}
+                    />
                     <span className="small">Present</span>
                   </label>
                 </div>
@@ -232,11 +291,11 @@ export default function SessionRun() {
 
         <div className="card">
           <div className="h2">Competencies to assess</div>
-          <div className="grid" style={{gap:10}}>
-            {competencies.map(c => (
-              <div key={c.id} className="card" style={{background:'var(--panel2)'}}>
-                <div style={{fontWeight:700}}>{c.code} — {c.title}</div>
-                <div className="small">{c.category}</div>
+          <div className="grid" style={{ gap: 10 }}>
+            {competencies.map((competency) => (
+              <div key={competency.id} className="card" style={{ background: 'var(--panel2)' }}>
+                <div style={{ fontWeight: 700 }}>{competency.code} - {competency.title}</div>
+                <div className="small">{competency.category}</div>
               </div>
             ))}
             {!competencies.length && <p className="small">No competencies mapped to this module yet.</p>}
@@ -249,37 +308,60 @@ export default function SessionRun() {
         {!attendees.length || !competencies.length ? (
           <p className="small">Add attendees and map competencies to the module to use assessments.</p>
         ) : (
-          <div className="grid" style={{gap:12}}>
-            {attendees.map(a => (
-              <div key={a.userId} className="card" style={{background:'var(--panel2)'}}>
-                <div className="row" style={{justifyContent:'space-between', alignItems:'center'}}>
-                  <div style={{fontWeight:800}}>{a.name}</div>
-                  <span className="badge">{attendance[a.userId] === false ? 'Not present' : 'Present'}</span>
+          <div className="grid" style={{ gap: 12 }}>
+            {attendees.map((attendee) => (
+              <div key={attendee.userId} className="card" style={{ background: 'var(--panel2)' }}>
+                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontWeight: 800 }}>{attendee.name}</div>
+                  <span className="badge">{attendance[attendee.userId] === false ? 'Not present' : 'Present'}</span>
                 </div>
-                <div className="grid" style={{gap:10, marginTop:10}}>
-                  {competencies.map(c => {
-                    const key = `${a.userId}|${c.id}`
-                    const v = assessments[key] || { outcome:'', notes:'' }
+                <div className="grid" style={{ gap: 10, marginTop: 10 }}>
+                  {competencies.map((competency) => {
+                    const key = `${attendee.userId}|${competency.id}`;
+                    const value = assessments[key] || { outcome: '', notes: '' };
                     return (
-                      <div key={c.id} className="card" style={{background:'rgba(18,27,48,.7)'}}>
-                        <div className="row" style={{justifyContent:'space-between', alignItems:'center'}}>
+                      <div key={competency.id} className="card" style={{ background: 'rgba(18,27,48,.7)' }}>
+                        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
                           <div>
-                            <div style={{fontWeight:700}}>{c.code} — {c.title}</div>
-                            <div className="small">{c.category}</div>
+                            <div style={{ fontWeight: 700 }}>{competency.code} - {competency.title}</div>
+                            <div className="small">{competency.category}</div>
                           </div>
-                          <div>{outcomePill(v.outcome)}</div>
+                          <div>{outcomePill(value.outcome)}</div>
                         </div>
-                        <div className="row" style={{marginTop:10}}>
-                          <label className="toggle"><input type="radio" name={`o-${key}`} checked={v.outcome==='COMPETENT'} onChange={()=>setAss(a.userId,c.id,{outcome:'COMPETENT'})} /><span className="small">Competent</span></label>
-                          <label className="toggle"><input type="radio" name={`o-${key}`} checked={v.outcome==='NEEDS_FOLLOWUP'} onChange={()=>setAss(a.userId,c.id,{outcome:'NEEDS_FOLLOWUP'})} /><span className="small">Needs follow-up</span></label>
-                          <button className="btn ghost" onClick={()=>setAss(a.userId,c.id,{outcome:'',notes:''})}>Clear</button>
+                        <div className="row" style={{ marginTop: 10 }}>
+                          <label className="toggle">
+                            <input
+                              type="radio"
+                              name={`o-${key}`}
+                              checked={value.outcome === 'COMPETENT'}
+                              onChange={() => setAss(attendee.userId, competency.id, { outcome: 'COMPETENT' })}
+                            />
+                            <span className="small">Competent</span>
+                          </label>
+                          <label className="toggle">
+                            <input
+                              type="radio"
+                              name={`o-${key}`}
+                              checked={value.outcome === 'NEEDS_FOLLOWUP'}
+                              onChange={() => setAss(attendee.userId, competency.id, { outcome: 'NEEDS_FOLLOWUP' })}
+                            />
+                            <span className="small">Needs follow-up</span>
+                          </label>
+                          <button className="btn ghost" onClick={() => setAss(attendee.userId, competency.id, { outcome: '', notes: '' })}>
+                            Clear
+                          </button>
                         </div>
-                        <div style={{marginTop:10}}>
+                        <div style={{ marginTop: 10 }}>
                           <label className="small">Notes (optional)</label>
-                          <textarea className="input" rows={2} value={v.notes} onChange={e=>setAss(a.userId,c.id,{notes:e.target.value})} />
+                          <textarea
+                            className="input"
+                            rows={2}
+                            value={value.notes}
+                            onChange={(event) => setAss(attendee.userId, competency.id, { notes: event.target.value })}
+                          />
                         </div>
                       </div>
-                    )
+                    );
                   })}
                 </div>
               </div>
@@ -289,10 +371,20 @@ export default function SessionRun() {
       </div>
 
       <div className="sticky-actions"><div className="inner">
-        <button className="btn secondary" disabled={savingAtt || !attendees.length} onClick={saveAttendance}>{savingAtt?'Saving…':'Save attendance'}</button>
-        <button className="btn secondary" disabled={savingAss || !attendees.length || !competencies.length} onClick={saveAssessments}>{savingAss?'Saving…':'Save assessments'}</button>
-        <button className="btn" disabled={awarding || !attendees.length || !competencies.length} onClick={awardCompetencies}>{awarding?'Awarding…':'Award competent'}</button>
+        <button className="btn secondary" disabled={savingAtt || !attendees.length} onClick={saveAttendance}>
+          {savingAtt ? 'Saving...' : 'Save attendance'}
+        </button>
+        <button className="btn secondary" disabled={savingAss || !attendees.length || !competencies.length} onClick={saveAssessments}>
+          {savingAss ? 'Saving...' : 'Save assessments'}
+        </button>
+        <button
+          className="btn"
+          disabled={awarding || hasUnsavedAssessments || !hasPersistedCompetentOutcomes}
+          onClick={awardCompetencies}
+        >
+          {awarding ? 'Awarding...' : 'Award competent'}
+        </button>
       </div></div>
     </div>
-  )
+  );
 }

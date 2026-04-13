@@ -11,7 +11,9 @@ export async function api(path, opts = {}) {
   });
   if (!res.ok) {
     const txt = await res.text().catch(()=> '');
-    throw new Error(txt || `API error (${res.status})`);
+    const error = new Error(txt || `API error (${res.status})`);
+    error.status = res.status;
+    throw error;
   }
   const ct = res.headers.get('content-type') || '';
   if (!ct.includes('application/json')) return null;
