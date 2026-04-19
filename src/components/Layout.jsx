@@ -8,11 +8,30 @@ export default function Layout({ me, children }) {
     <>
       <div className="topbar">
         <div className="topbar-inner">
-          <div className="brand">
-            <span className="brand-mcmillan">M<sup style={{fontSize:'0.6em'}}>c</sup>MILLAN</span>
-            <span className="brand-drilling">Drilling</span>
-            <span className="brand-lms">LMS</span>
-          </div>
+
+          {/* Logo — transparent PNG, inverted to white for dark nav */}
+          <a href="/" style={{ display: 'flex', alignItems: 'center', flexShrink: 0, gap: 10 }}>
+            <img
+              src="/McMillanDrilling-logo-transparent.png"
+              alt="McMillan Drilling"
+              style={{
+                height: 32,
+                filter: 'brightness(0) invert(1)',
+              }}
+            />
+            <span style={{
+              fontSize: '0.68rem',
+              fontWeight: 600,
+              color: 'rgba(255,255,255,0.45)',
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              alignSelf: 'flex-end',
+              marginBottom: 2,
+            }}>
+              LMS
+            </span>
+          </a>
+
           <div className="nav">
             <NavLink className={({ isActive }) => `chip ${isActive ? 'active' : ''}`} to="/">
               Dashboard
@@ -35,6 +54,7 @@ export default function Layout({ me, children }) {
             )}
             <button className="chip" onClick={logout}>Logout</button>
           </div>
+
         </div>
       </div>
       <div className="container">{children}</div>
