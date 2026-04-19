@@ -1,216 +1,377 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* ── Brand tokens ─────────────────────────────────────────────────────────── */
 :root {
-  color-scheme: dark;
-  --bg: #0f172a;
-  --panel: #162033;
-  --panel2: #1d2940;
-  --text: #e5eefc;
-  --muted: #9eb0ce;
-  --line: #30415f;
-  --brand: #7dd3fc;
-  --brand-strong: #38bdf8;
-  --good: #34d399;
-  --warn: #fbbf24;
-  --bad: #f87171;
+  color-scheme: light;
+
+  /* McMillan brand colours */
+  --mcm-blue:       #002045;
+  --mcm-red:        #D0202E;
+  --mcm-grey:       #717271;
+
+  /* UI surface */
+  --bg:             #F4F6F9;
+  --bg-alt:         #EAECF0;
+  --panel:          #FFFFFF;
+  --panel2:         #F8F9FB;
+  --topbar-bg:      #002045;
+
+  /* Text */
+  --text:           #111827;
+  --text-inv:       #FFFFFF;
+  --muted:          #6B7280;
+
+  /* Borders */
+  --line:           #E2E5EA;
+  --line-strong:    #C8CDD6;
+
+  /* Semantic */
+  --brand:          #002045;
+  --brand-strong:   #002045;
+  --brand-light:    #E8EDF5;
+  --good:           #16A34A;
+  --good-bg:        #DCFCE7;
+  --warn:           #D97706;
+  --warn-bg:        #FEF3C7;
+  --bad:            #DC2626;
+  --bad-bg:         #FEE2E2;
 }
 
-* {
-  box-sizing: border-box;
-}
+/* ── Reset & base ─────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  margin: 0;
-  font-family: "Segoe UI", sans-serif;
-  background: linear-gradient(180deg, #08101f 0%, var(--bg) 100%);
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  background: var(--bg);
   color: var(--text);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
+a { color: inherit; text-decoration: none; }
 
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
+button, input, select, textarea { font: inherit; }
 
+/* ── Top bar ──────────────────────────────────────────────────────────────── */
 .topbar {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: rgba(8, 16, 31, 0.92);
-  border-bottom: 1px solid var(--line);
-  backdrop-filter: blur(12px);
+  background: var(--topbar-bg);
+  border-bottom: 3px solid var(--mcm-red);
+  box-shadow: 0 2px 12px rgba(0,32,69,0.18);
 }
 
 .topbar-inner,
 .container,
 .sticky-actions .inner {
-  width: min(1120px, calc(100% - 32px));
+  width: min(1200px, calc(100% - 40px));
   margin: 0 auto;
 }
 
-.topbar-inner,
+.topbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 64px;
+  gap: 16px;
+}
+
+/* ── Logo (CSS wordmark matching brand guide) ─────────────────────────────── */
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+  user-select: none;
+  letter-spacing: -0.01em;
+}
+
+.brand-mcmillan {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.brand-drilling {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--mcm-red);
+  letter-spacing: 0.01em;
+}
+
+.brand-lms {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.45);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-left: 10px;
+  margin-bottom: 1px;
+  align-self: flex-end;
+}
+
+/* ── Nav ──────────────────────────────────────────────────────────────────── */
+.nav {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  padding: 7px 14px;
+  background: transparent;
+  color: rgba(255,255,255,0.75);
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: background 0.15s, color 0.15s;
+}
+
+.chip:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+.chip.active {
+  background: rgba(255,255,255,0.15);
+  color: #FFFFFF;
+  border-color: rgba(255,255,255,0.25);
+  font-weight: 600;
+}
+
+/* ── Page layout ──────────────────────────────────────────────────────────── */
+.container {
+  padding: 28px 0 100px;
+}
+
 .row {
   display: flex;
   gap: 12px;
 }
 
-.topbar-inner {
-  align-items: center;
-  justify-content: space-between;
-  min-height: 68px;
-}
-
-.nav {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.brand,
-.h1,
-.h2 {
-  font-weight: 700;
-}
-
-.brand {
-  letter-spacing: 0.04em;
-}
-
-.container {
-  padding: 24px 0 96px;
-}
-
 .grid {
   display: grid;
-  gap: 16px;
+  gap: 18px;
 }
 
 .two {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+/* ── Cards ────────────────────────────────────────────────────────────────── */
 .card {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 18px;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 4px rgba(0,32,69,0.06), 0 4px 16px rgba(0,32,69,0.04);
 }
 
+/* ── Typography ───────────────────────────────────────────────────────────── */
 .h1 {
   font-size: 1.5rem;
-  margin-bottom: 8px;
+  font-weight: 700;
+  color: var(--mcm-blue);
+  margin-bottom: 6px;
+  letter-spacing: -0.02em;
 }
 
 .h2 {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--mcm-blue);
   margin-bottom: 10px;
 }
 
 .small {
   color: var(--muted);
-  font-size: 0.92rem;
+  font-size: 0.875rem;
 }
 
-.btn,
-.chip {
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+.btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border-radius: 999px;
+  border-radius: 8px;
   border: 1px solid transparent;
-  padding: 10px 14px;
-  background: var(--brand-strong);
-  color: #062033;
+  padding: 9px 18px;
+  background: var(--mcm-blue);
+  color: #FFFFFF;
   cursor: pointer;
   font-weight: 600;
+  font-size: 0.9rem;
+  transition: background 0.15s, box-shadow 0.15s, opacity 0.15s;
+  white-space: nowrap;
 }
 
-.btn.secondary,
-.btn.ghost,
-.chip {
+.btn:hover:not(:disabled) {
+  background: #003070;
+  box-shadow: 0 2px 8px rgba(0,32,69,0.2);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn.secondary {
+  background: var(--brand-light);
+  color: var(--mcm-blue);
+  border-color: #C8D5E8;
+}
+
+.btn.secondary:hover:not(:disabled) {
+  background: #D8E4F0;
+}
+
+.btn.ghost {
   background: transparent;
+  color: var(--muted);
+  border-color: var(--line-strong);
+}
+
+.btn.ghost:hover:not(:disabled) {
+  background: var(--bg-alt);
   color: var(--text);
-  border-color: var(--line);
 }
 
-.chip.active {
-  border-color: var(--brand);
-  color: var(--brand);
+.btn.danger {
+  background: var(--mcm-red);
+  color: #fff;
+  border-color: var(--mcm-red);
 }
 
+.btn.danger:hover:not(:disabled) {
+  background: #b01a25;
+}
+
+/* ── Form inputs ──────────────────────────────────────────────────────────── */
 .input {
   width: 100%;
-  border-radius: 12px;
-  border: 1px solid var(--line);
-  padding: 10px 12px;
-  background: rgba(6, 12, 24, 0.72);
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  padding: 9px 12px;
+  background: var(--panel);
   color: var(--text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  font-size: 0.9rem;
 }
 
-.badge,
+.input:focus {
+  outline: none;
+  border-color: var(--mcm-blue);
+  box-shadow: 0 0 0 3px rgba(0,32,69,0.1);
+}
+
+/* ── Badges & pills ───────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 5px;
+  padding: 3px 9px;
+  background: var(--brand-light);
+  color: var(--mcm-blue);
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid #C8D5E8;
+  letter-spacing: 0.02em;
+}
+
 .pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   border-radius: 999px;
-  padding: 4px 10px;
-  border: 1px solid var(--line);
+  padding: 3px 10px;
+  border: 1px solid var(--line-strong);
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 500;
 }
 
 .pill.good {
   color: var(--good);
-  border-color: rgba(52, 211, 153, 0.35);
+  background: var(--good-bg);
+  border-color: #86EFAC;
 }
 
 .pill.warn {
   color: var(--warn);
-  border-color: rgba(251, 191, 36, 0.35);
+  background: var(--warn-bg);
+  border-color: #FCD34D;
 }
 
+.pill.bad {
+  color: var(--bad);
+  background: var(--bad-bg);
+  border-color: #FCA5A5;
+}
+
+/* ── Toggle / radio ───────────────────────────────────────────────────────── */
 .toggle {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
 }
 
+/* ── Table ────────────────────────────────────────────────────────────────── */
+.th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--panel2);
+  border-bottom: 2px solid var(--line);
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tr:hover { background: var(--bg); }
+
+.td { padding: 11px 14px; border-bottom: 1px solid var(--line); }
+
+/* ── Sticky action bar ────────────────────────────────────────────────────── */
 .sticky-actions {
   position: sticky;
   bottom: 0;
-  padding: 12px 0 16px;
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0), rgba(15, 23, 42, 0.96) 34%);
+  padding: 12px 0 18px;
+  background: linear-gradient(180deg, rgba(244,246,249,0) 0%, rgba(244,246,249,0.97) 30%);
 }
 
 .sticky-actions .inner {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
+/* ── Accent bar on cards (optional, for page headers) ─────────────────────── */
+.card.accent-top {
+  border-top: 3px solid var(--mcm-red);
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
 @media (max-width: 760px) {
-  .two {
-    grid-template-columns: 1fr;
-  }
+  .two { grid-template-columns: 1fr; }
 
-  .topbar-inner,
-  .row {
-    flex-direction: column;
-    align-items: stretch;
-  }
+  .topbar-inner { flex-direction: column; align-items: stretch; padding: 12px 0; }
 
-  .sticky-actions .inner {
-    justify-content: stretch;
-  }
+  .row { flex-wrap: wrap; }
 
-  .sticky-actions .inner > * {
-    flex: 1 1 auto;
-  }
+  .sticky-actions .inner { justify-content: stretch; }
+  .sticky-actions .inner > * { flex: 1 1 auto; }
 }
