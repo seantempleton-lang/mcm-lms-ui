@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
+import ModulePlayer from '../components/ModulePlayer.jsx';
 
 const statusText = {
   ASSIGNED: 'Assigned',
@@ -15,6 +16,7 @@ export default function LearnerTraining() {
   const [error, setError] = useState('');
   const [notes, setNotes] = useState({});
   const [busyId, setBusyId] = useState('');
+  const [openModuleId, setOpenModuleId] = useState('');
 
   async function load() {
     setLoading(true);
@@ -100,6 +102,12 @@ export default function LearnerTraining() {
               </p>
               {item.module.estimatedMinutes && <p className="small">Estimated duration: {item.module.estimatedMinutes} minutes</p>}
             </div>
+            <button
+              className={`btn ${openModuleId === item.id ? 'secondary' : ''}`}
+              onClick={() => setOpenModuleId((current) => current === item.id ? '' : item.id)}
+            >
+              {openModuleId === item.id ? 'Hide module' : 'Launch module'}
+            </button>
           </div>
 
           {(item.module.description || item.module.learningObjectives || item.module.contentUrl || item.module.contentBody) && (
@@ -116,10 +124,10 @@ export default function LearnerTraining() {
                   Open learning material
                 </a>
               )}
-              {item.module.contentBody && (
-                <div>
-                  <div className="small">Module content</div>
-                  <div className="card" style={{ background: 'var(--panel2)', whiteSpace: 'pre-wrap' }}>{item.module.contentBody}</div>
+              {openModuleId === item.id && (
+                <div className="grid" style={{ gap: 8 }}>
+                  <div className="small">Interactive module</div>
+                  <ModulePlayer module={item.module} />
                 </div>
               )}
             </div>

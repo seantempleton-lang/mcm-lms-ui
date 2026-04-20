@@ -484,6 +484,311 @@ button, input, select, textarea { font: inherit; }
   border-top: 3px solid var(--mcm-red);
 }
 
+.module-player {
+  --module-accent: var(--mcm-blue);
+  --module-surface: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  display: grid;
+  gap: 14px;
+}
+
+.module-player-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 16px;
+  align-items: end;
+}
+
+.module-title {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--mcm-blue);
+  letter-spacing: -0.03em;
+}
+
+.module-subtitle {
+  color: var(--muted);
+  margin-top: 6px;
+  max-width: 62ch;
+}
+
+.module-eyebrow {
+  color: var(--module-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.module-progress-cluster {
+  display: grid;
+  gap: 8px;
+}
+
+.module-progress-label {
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-align: right;
+}
+
+.module-progress-rail {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.22);
+  overflow: hidden;
+}
+
+.module-progress-rail span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--module-accent) 0%, color-mix(in srgb, var(--module-accent) 72%, white) 100%);
+}
+
+.module-player-shell {
+  background: var(--module-surface);
+  border: 1px solid color-mix(in srgb, var(--module-accent) 18%, white);
+  border-radius: 24px;
+  padding: 22px;
+  box-shadow: 0 20px 42px rgba(15, 23, 42, 0.08);
+}
+
+.module-slide-frame {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(250px, 0.7fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.module-slide-copy {
+  min-height: 440px;
+  background: rgba(255,255,255,0.84);
+  border: 1px solid rgba(255,255,255,0.7);
+  border-radius: 22px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.module-slide-title {
+  font-size: clamp(1.5rem, 2.2vw, 2.35rem);
+  line-height: 1.05;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.04em;
+  max-width: 14ch;
+}
+
+.module-body-copy {
+  margin-top: 18px;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #1e293b;
+  max-width: 60ch;
+}
+
+.module-slide-grid {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.module-bullet,
+.module-check-item,
+.module-focus-item,
+.module-reflection-box,
+.module-side-card,
+.module-quiz-card {
+  background: rgba(255,255,255,0.8);
+  border: 1px solid rgba(255,255,255,0.75);
+  border-radius: 18px;
+}
+
+.module-bullet,
+.module-check-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  padding: 14px 16px;
+  align-items: start;
+  color: #0f172a;
+}
+
+.module-bullet-index,
+.module-check-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--module-accent) 16%, white);
+  color: var(--module-accent);
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.module-check-icon {
+  font-size: 1.1rem;
+}
+
+.module-slide-side {
+  display: grid;
+  gap: 14px;
+}
+
+.module-side-card {
+  padding: 18px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+}
+
+.module-side-value {
+  margin-top: 8px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.module-focus-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.module-focus-item {
+  padding: 12px 14px;
+  color: #1e293b;
+}
+
+.module-fact-pill,
+.module-score-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 8px 14px;
+  margin-top: 14px;
+  background: color-mix(in srgb, var(--module-accent) 12%, white);
+  color: var(--module-accent);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.module-player-shell.quiz-mode {
+  display: grid;
+  gap: 18px;
+}
+
+.module-player-chrome {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 16px;
+}
+
+.module-quiz-card {
+  padding: 18px;
+}
+
+.module-quiz-number {
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.module-quiz-question {
+  color: #0f172a;
+  font-size: 1.02rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.module-quiz-options {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.module-quiz-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: start;
+  width: 100%;
+  text-align: left;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(255,255,255,0.92);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.module-quiz-option:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--module-accent) 36%, white);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+}
+
+.module-quiz-option.selected {
+  border-color: var(--module-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--module-accent) 15%, white);
+}
+
+.module-quiz-option.correct {
+  border-color: #16A34A;
+  background: #f0fdf4;
+}
+
+.module-quiz-option.wrong {
+  border-color: #DC2626;
+  background: #fef2f2;
+}
+
+.module-quiz-option-mark {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--module-accent) 12%, white);
+  color: var(--module-accent);
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.module-quiz-feedback {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.76);
+  color: #334155;
+}
+
+.module-reflection-box {
+  margin-top: 16px;
+  padding: 14px 16px;
+  color: #334155;
+}
+
+.module-quiz-actions,
+.module-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.module-nav-hint {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
 @media (max-width: 980px) {
   .app-shell {
     width: 100%;
@@ -525,6 +830,19 @@ button, input, select, textarea { font: inherit; }
     background: rgba(0,17,37,0.36);
     border: 0;
     z-index: 15;
+  }
+
+  .module-player-header,
+  .module-slide-frame {
+    grid-template-columns: 1fr;
+  }
+
+  .module-progress-label {
+    text-align: left;
+  }
+
+  .module-slide-copy {
+    min-height: 0;
   }
 }
 
