@@ -21,13 +21,12 @@ const MODE_LABELS = {
 
 export default function ModulesView() {
   const [modules, setModules] = useState([]);
-  const [err, setErr]         = useState('');
+  const [err, setErr] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     api('/modules')
-      .then(data => {
-        // Sort by category then title
+      .then((data) => {
         const sorted = (data || []).sort((a, b) =>
           (a.category || '').localeCompare(b.category || '') ||
           a.title.localeCompare(b.title)
@@ -38,7 +37,6 @@ export default function ModulesView() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Group by category
   const grouped = modules.reduce((acc, mod) => {
     const cat = mod.category || 'OTHER';
     if (!acc[cat]) acc[cat] = [];
@@ -62,12 +60,16 @@ export default function ModulesView() {
         const meta = categoryMeta(cat);
         return (
           <div key={cat} className="card">
-            {/* Category header */}
             <div className="row" style={{ alignItems: 'center', marginBottom: 16, gap: 10 }}>
-              <div style={{
-                width: 4, height: 32, borderRadius: 2,
-                background: meta.colour, flexShrink: 0
-              }} />
+              <div
+                style={{
+                  width: 4,
+                  height: 32,
+                  borderRadius: 2,
+                  background: meta.colour,
+                  flexShrink: 0
+                }}
+              />
               <div>
                 <div className="h2" style={{ margin: 0, color: meta.colour }}>
                   {meta.label}
@@ -76,40 +78,41 @@ export default function ModulesView() {
               </div>
             </div>
 
-            {/* Module cards */}
             <div className="grid" style={{ gap: 10 }}>
-              {items.map(mod => {
-                const content = (() => {
-                  try { return JSON.parse(mod.description || '{}'); }
-                  catch { return {}; }
-                })();
-                const sectionCount = content.sections?.length || 0;
+              {items.map((mod) => {
+                const description = (mod.description || '').trim();
+                const preview = description.length > 120
+                  ? `${description.slice(0, 120)}...`
+                  : description;
 
                 return (
-                  <div key={mod.id} className="card" style={{
-                    background: 'var(--panel2)',
-                    borderLeft: `3px solid ${meta.colour}`,
-                  }}>
+                  <div
+                    key={mod.id}
+                    className="card"
+                    style={{
+                      background: 'var(--panel2)',
+                      borderLeft: `3px solid ${meta.colour}`,
+                    }}
+                  >
                     <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, marginBottom: 4 }}>{mod.title}</div>
-                        {content.overview && (
+                        {preview && (
                           <p className="small" style={{ marginBottom: 8, lineHeight: 1.5 }}>
-                            {content.overview.length > 120
-                              ? content.overview.slice(0, 120) + '…'
-                              : content.overview}
+                            {preview}
                           </p>
                         )}
                         <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
                           <span className="badge">{MODE_LABELS[mod.mode] || mod.mode}</span>
-                          {sectionCount > 0 && (
-                            <span className="badge">{sectionCount} sections</span>
-                          )}
-                          {mod.competencies?.map(mc => (
-                            <span key={mc.competency.id} className="badge" style={{
-                              color: meta.colour,
-                              borderColor: meta.colour + '55',
-                            }}>
+                          {mod.competencies?.map((mc) => (
+                            <span
+                              key={mc.competency.id}
+                              className="badge"
+                              style={{
+                                color: meta.colour,
+                                borderColor: `${meta.colour}55`,
+                              }}
+                            >
                               {mc.competency.code}
                             </span>
                           ))}

@@ -4,12 +4,25 @@ import { api } from '../api';
 const emptyForm = {
   title: '',
   mode: 'INDIVIDUAL',
+  category: 'GEOTECH',
   description: '',
   learningObjectives: '',
   estimatedMinutes: '',
   contentUrl: '',
   contentBody: ''
 };
+
+const CATEGORY_OPTIONS = [
+  { value: 'HSE', label: 'Health, Safety & Environment' },
+  { value: 'GEOTECH', label: 'Geotechnical Drilling' },
+  { value: 'WATER', label: 'Water Drilling' },
+  { value: 'PLANT', label: 'Plant & Equipment' },
+  { value: 'ADMIN', label: 'Administration & Compliance' },
+];
+
+function categoryLabel(category) {
+  return CATEGORY_OPTIONS.find((option) => option.value === category)?.label || category || 'Uncategorised';
+}
 
 export default function AdminModules() {
   const [modules, setModules] = useState([]);
@@ -44,6 +57,7 @@ export default function AdminModules() {
     setForm({
       title: item.title || '',
       mode: item.mode || 'INDIVIDUAL',
+      category: item.category || 'GEOTECH',
       description: item.description || '',
       learningObjectives: item.learningObjectives || '',
       estimatedMinutes: item.estimatedMinutes ? String(item.estimatedMinutes) : '',
@@ -59,6 +73,7 @@ export default function AdminModules() {
     try {
       const payload = {
         ...form,
+        category: form.category || undefined,
         estimatedMinutes: form.estimatedMinutes ? Number(form.estimatedMinutes) : undefined,
         description: form.description || undefined,
         learningObjectives: form.learningObjectives || undefined,
@@ -112,7 +127,10 @@ export default function AdminModules() {
                   onClick={() => selectModule(module.id)}
                 >
                   <span>{module.title}</span>
-                  <span className="badge">{module.mode}</span>
+                  <div className="row" style={{ gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    <span className="badge">{categoryLabel(module.category)}</span>
+                    <span className="badge">{module.mode}</span>
+                  </div>
                 </button>
               ))}
             </div>
@@ -131,6 +149,14 @@ export default function AdminModules() {
               <select className="input" value={form.mode} onChange={(event) => setForm((current) => ({ ...current, mode: event.target.value }))}>
                 {['INDIVIDUAL', 'FACILITATED', 'HYBRID'].map((mode) => (
                   <option key={mode} value={mode}>{mode}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="small">Category</label>
+              <select className="input" value={form.category} onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}>
+                {CATEGORY_OPTIONS.map((category) => (
+                  <option key={category.value} value={category.value}>{category.label}</option>
                 ))}
               </select>
             </div>

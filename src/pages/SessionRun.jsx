@@ -81,6 +81,13 @@ export default function SessionRun() {
       attended: attendance[item.userId] ?? item.attended ?? true
     }));
   }, [session, attendance]);
+  const presentAttendeeIds = useMemo(() => {
+    return new Set(
+      attendees
+        .filter((attendee) => attendee.attended !== false)
+        .map((attendee) => attendee.userId)
+    );
+  }, [attendees]);
 
   const persistedAssessments = useMemo(() => buildAssessmentMap(session?.assessments), [session]);
   const hasUnsavedAssessments = useMemo(() => !mapsMatch(assessments, persistedAssessments), [assessments, persistedAssessments]);
@@ -164,6 +171,7 @@ export default function SessionRun() {
     try {
       const list = [];
       attendees.forEach((attendee) => {
+        if (!presentAttendeeIds.has(attendee.userId)) return;
         competencies.forEach((competency) => {
           const key = `${attendee.userId}|${competency.id}`;
           const value = assessments[key];
@@ -199,7 +207,7 @@ export default function SessionRun() {
     try {
       const awards = [];
       (session.assessments || []).forEach((item) => {
-        if (item.outcome === 'COMPETENT') {
+        if (item.outcome === 'COMPETENT' && presentAttendeeIds.has(item.userId)) {
           awards.push({
             userId: item.userId,
             competencyId: item.competencyId,
@@ -342,6 +350,7 @@ export default function SessionRun() {
                             <input
                               type="radio"
                               name={`o-${key}`}
+                              disabled={attendance[attendee.userId] === false}
                               checked={value.outcome === 'COMPETENT'}
                               onChange={() => setAss(attendee.userId, competency.id, { outcome: 'COMPETENT' })}
                             />
@@ -351,6 +360,7 @@ export default function SessionRun() {
                             <input
                               type="radio"
                               name={`o-${key}`}
+                              disabled={attendance[attendee.userId] === false}
                               checked={value.outcome === 'NEEDS_FOLLOWUP'}
                               onChange={() => setAss(attendee.userId, competency.id, { outcome: 'NEEDS_FOLLOWUP' })}
                             />
@@ -366,9 +376,15 @@ export default function SessionRun() {
                             className="input"
                             rows={2}
                             value={value.notes}
+                            disabled={attendance[attendee.userId] === false}
                             onChange={(event) => setAss(attendee.userId, competency.id, { notes: event.target.value })}
                           />
                         </div>
+                        {attendance[attendee.userId] === false && (
+                          <p className="small" style={{ marginTop: 10 }}>
+                            Absent attendees are excluded from saved assessments and competency awards.
+                          </p>
+                        )}
                       </div>
                     );
                   })}

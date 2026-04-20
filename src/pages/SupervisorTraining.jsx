@@ -1,6 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
 
+const CATEGORY_LABELS = {
+  HSE: 'Health, Safety & Environment',
+  GEOTECH: 'Geotechnical Drilling',
+  WATER: 'Water Drilling',
+  PLANT: 'Plant & Equipment',
+  ADMIN: 'Administration & Compliance'
+};
+
+function moduleCategoryLabel(category) {
+  return CATEGORY_LABELS[category] || category || 'Uncategorised';
+}
+
 const statusText = {
   ALL: 'All assignments',
   ASSIGNED: 'Assigned',
@@ -125,7 +137,9 @@ export default function SupervisorTraining() {
               <select className="input" value={form.moduleId} onChange={(event) => setForm((current) => ({ ...current, moduleId: event.target.value }))}>
                 <option value="" disabled>Select module</option>
                 {modules.map((module) => (
-                  <option key={module.id} value={module.id}>{module.title}</option>
+                  <option key={module.id} value={module.id}>
+                    {module.title} ({moduleCategoryLabel(module.category)})
+                  </option>
                 ))}
               </select>
             </div>
