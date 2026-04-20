@@ -7,6 +7,7 @@ import CompetenciesView from './pages/CompetenciesView.jsx';
 import AdminUsers from './pages/AdminUsers.jsx';
 import AdminModules from './pages/AdminModules.jsx';
 import MatrixView from './pages/MatrixView.jsx';
+import ModulesView from './pages/ModulesView.jsx';
 import LearnerTraining from './pages/LearnerTraining.jsx';
 import SupervisorTraining from './pages/SupervisorTraining.jsx';
 import Layout from './components/Layout.jsx';
@@ -83,6 +84,13 @@ export default function App() {
           }
         />
         <Route
+          path="/supervisor/modules"
+          element={
+            <RequireRole me={me} roles={['SUPERVISOR', 'ADMIN']}>
+              <ModulesView />
+            </RequireRole>
+          }
+        />        <Route
           path="/supervisor/matrix"
           element={
             <RequireRole me={me} roles={['SUPERVISOR', 'ADMIN']}>
