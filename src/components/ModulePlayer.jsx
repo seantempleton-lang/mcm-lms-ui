@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 const CATEGORY_META = {
   HSE: { accent: '#D0202E', surface: 'linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%)' },
@@ -23,6 +23,16 @@ function normaliseObjectives(value) {
     .split('\n')
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function getModuleSummary(module) {
+  const parsedDescription = safeJsonParse(module.description);
+  if (parsedDescription?.overview) return parsedDescription.overview;
+
+  const parsedBody = safeJsonParse(module.contentBody);
+  if (parsedBody?.subtitle) return parsedBody.subtitle;
+
+  return module.description || '';
 }
 
 function parseLegacyDeck(module) {
@@ -54,7 +64,7 @@ function parseLegacyDeck(module) {
         type: 'reflection'
       })));
 
-    return { slides, quiz, title: module.title, subtitle: module.description || '' };
+    return { slides, quiz, title: module.title, subtitle: descriptionJson.overview || getModuleSummary(module) };
   }
 
   const body = module.contentBody || '';
@@ -75,7 +85,7 @@ function parseLegacyDeck(module) {
       }],
       quiz: [],
       title: module.title,
-      subtitle: module.description || ''
+      subtitle: getModuleSummary(module)
     };
   }
 
@@ -122,7 +132,7 @@ function parseLegacyDeck(module) {
     });
   });
 
-  return { slides, quiz, title: module.title, subtitle: module.description || '' };
+  return { slides, quiz, title: module.title, subtitle: getModuleSummary(module) };
 }
 
 function normaliseStructuredDeck(module, parsed) {
@@ -180,7 +190,7 @@ function SlideContent({ slide }) {
   return <p className="module-body-copy">{slide.body}</p>;
 }
 
-function QuizView({ quiz, answers, setAnswers, submitted, setSubmitted }) {
+function QuizView({ quiz, answers, setAnswers, submitted, setSubmitted, onGrade, attempts }) {
   const total = quiz.filter((item) => Array.isArray(item.options) && typeof item.correctIndex === 'number').length;
   const score = quiz.reduce((sum, item) => {
     if (!Array.isArray(item.options) || typeof item.correctIndex !== 'number') return sum;
@@ -197,7 +207,7 @@ function QuizView({ quiz, answers, setAnswers, submitted, setSubmitted }) {
         </div>
         {submitted && total > 0 && (
           <div className="module-score-pill">
-            Score {score}/{total}
+            Score {score}/{total} | Attempt {attempts}
           </div>
         )}
       </div>
@@ -252,7 +262,7 @@ function QuizView({ quiz, answers, setAnswers, submitted, setSubmitted }) {
           <button type="button" className="btn secondary" onClick={() => setAnswers({})}>
             Reset answers
           </button>
-          <button type="button" className="btn" onClick={() => setSubmitted(true)}>
+          <button type="button" className="btn" onClick={() => onGrade(score, total)}>
             Grade quiz
           </button>
         </div>
@@ -261,12 +271,15 @@ function QuizView({ quiz, answers, setAnswers, submitted, setSubmitted }) {
   );
 }
 
-export default function ModulePlayer({ module }) {
+export default function ModulePlayer({ module, onAssessmentChange, initialAssessmentSummary = null }) {
   const deck = useMemo(() => getDeck(module), [module]);
   const meta = CATEGORY_META[module.category] || CATEGORY_META.GEOTECH;
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState({});
-  const [submitted, setSubmitted] = useState(false);
+  const [submitted, setSubmitted] = useState(Boolean(initialAssessmentSummary));
+  const [attempts, setAttempts] = useState(initialAssessmentSummary?.attempts || 0);
+  const [assessmentSummary, setAssessmentSummary] = useState(initialAssessmentSummary);
+  const [quizStartedAt, setQuizStartedAt] = useState(null);
 
   const slideCount = deck.slides.length;
   const hasQuiz = deck.quiz.length > 0;
@@ -274,6 +287,33 @@ export default function ModulePlayer({ module }) {
   const progressTotal = slideCount + (hasQuiz ? 1 : 0);
   const progress = ((step + 1) / Math.max(progressTotal, 1)) * 100;
   const slide = deck.slides[Math.min(step, slideCount - 1)];
+
+  useEffect(() => {
+    if (onQuiz && !quizStartedAt) {
+      setQuizStartedAt(Date.now());
+    }
+  }, [onQuiz, quizStartedAt]);
+
+  useEffect(() => {
+    if (onAssessmentChange && assessmentSummary) {
+      onAssessmentChange(assessmentSummary);
+    }
+  }, [assessmentSummary, onAssessmentChange]);
+
+  function handleGrade(score, totalQuestions) {
+    const nextAttempts = attempts + 1;
+    const durationSeconds = quizStartedAt ? Math.max(0, Math.round((Date.now() - quizStartedAt) / 1000)) : 0;
+    const nextSummary = {
+      score,
+      totalQuestions,
+      attempts: nextAttempts,
+      durationSeconds
+    };
+
+    setAttempts(nextAttempts);
+    setSubmitted(true);
+    setAssessmentSummary(nextSummary);
+  }
 
   return (
     <div className="module-player" style={{ '--module-accent': meta.accent, '--module-surface': meta.surface }}>
@@ -300,6 +340,8 @@ export default function ModulePlayer({ module }) {
           setAnswers={setAnswers}
           submitted={submitted}
           setSubmitted={setSubmitted}
+          onGrade={handleGrade}
+          attempts={attempts}
         />
       ) : (
         <div className={`module-player-shell ${slide?.tone === 'warning' ? 'tone-warning' : ''}`}>

@@ -21,6 +21,25 @@ const statusText = {
   COMPLETED: 'Completed'
 };
 
+function formatDuration(seconds) {
+  if (seconds === null || seconds === undefined) return '';
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  if (!mins) return `${secs}s`;
+  if (!secs) return `${mins}m`;
+  return `${mins}m ${secs}s`;
+}
+
+function getAssessmentSummary(item) {
+  if (item?.assessmentTotalQuestions === null || item?.assessmentTotalQuestions === undefined) return null;
+  return `${item.assessmentScore}/${item.assessmentTotalQuestions} correct | ${item.assessmentAttempts} attempt${item.assessmentAttempts === 1 ? '' : 's'} | ${formatDuration(item.assessmentDurationSeconds)}`;
+}
+
+function getReportAssessmentSummary(summary) {
+  if (!summary || summary.totalQuestions === null || summary.totalQuestions === undefined) return null;
+  return `${summary.score}/${summary.totalQuestions} correct | ${summary.attempts} attempt${summary.attempts === 1 ? '' : 's'} | ${formatDuration(summary.durationSeconds)}`;
+}
+
 export default function SupervisorTraining() {
   const [assignments, setAssignments] = useState([]);
   const [learners, setLearners] = useState([]);
@@ -175,6 +194,7 @@ export default function SupervisorTraining() {
               <p className="small">Status: <span className="badge">{statusText[item.status] || item.status}</span></p>
               <p className="small">Assigned {new Date(item.assignedAt).toLocaleDateString()}</p>
               {item.submittedAt && <p className="small">Submitted {new Date(item.submittedAt).toLocaleString()}</p>}
+              {getAssessmentSummary(item) && <p className="small">Assessment result: {getAssessmentSummary(item)}</p>}
               {item.learnerNotes && <p className="small" style={{ marginTop: 8 }}>Learner notes: {item.learnerNotes}</p>}
             </div>
             <button className="btn ghost" onClick={() => fetchReport(item.learner.id)}>
@@ -198,6 +218,7 @@ export default function SupervisorTraining() {
                 {reports[item.learner.id].completedAssignments.length ? reports[item.learner.id].completedAssignments.map((assignment) => (
                   <div key={assignment.id} className="small" style={{ marginBottom: 8 }}>
                     {assignment.moduleTitle} - {assignment.reviewedAt ? new Date(assignment.reviewedAt).toLocaleDateString() : 'Completed'}
+                    {getReportAssessmentSummary(assignment.assessmentSummary) ? ` | ${getReportAssessmentSummary(assignment.assessmentSummary)}` : ''}
                   </div>
                 )) : <p className="small">No completed assignments yet.</p>}
               </div>

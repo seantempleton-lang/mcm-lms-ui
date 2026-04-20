@@ -24,9 +24,36 @@ function categoryLabel(category) {
   return CATEGORY_OPTIONS.find((option) => option.value === category)?.label || category || 'Uncategorised';
 }
 
+function safeJsonParse(value) {
+  if (!value || typeof value !== 'string') return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
+function getDescriptionState(value) {
+  const parsed = safeJsonParse(value);
+  if (parsed?.overview) {
+    return {
+      text: parsed.overview,
+      mode: 'structured',
+      raw: parsed
+    };
+  }
+
+  return {
+    text: value || '',
+    mode: 'plain',
+    raw: null
+  };
+}
+
 export default function AdminModules() {
   const [modules, setModules] = useState([]);
   const [form, setForm] = useState(emptyForm);
+  const [descriptionMeta, setDescriptionMeta] = useState({ mode: 'plain', raw: null });
   const [selectedId, setSelectedId] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -52,18 +79,21 @@ export default function AdminModules() {
     const item = modules.find((module) => module.id === id);
     if (!item) {
       setForm(emptyForm);
+      setDescriptionMeta({ mode: 'plain', raw: null });
       return;
     }
+    const descriptionState = getDescriptionState(item.description);
     setForm({
       title: item.title || '',
       mode: item.mode || 'INDIVIDUAL',
       category: item.category || 'GEOTECH',
-      description: item.description || '',
+      description: descriptionState.text,
       learningObjectives: item.learningObjectives || '',
       estimatedMinutes: item.estimatedMinutes ? String(item.estimatedMinutes) : '',
       contentUrl: item.contentUrl || '',
       contentBody: item.contentBody || ''
     });
+    setDescriptionMeta({ mode: descriptionState.mode, raw: descriptionState.raw });
   }
 
   async function saveModule(event) {
@@ -71,11 +101,19 @@ export default function AdminModules() {
     setSaving(true);
     setError('');
     try {
+      let nextDescription = form.description || undefined;
+      if (descriptionMeta.mode === 'structured' && descriptionMeta.raw) {
+        nextDescription = JSON.stringify({
+          ...descriptionMeta.raw,
+          overview: form.description || ''
+        });
+      }
+
       const payload = {
         ...form,
         category: form.category || undefined,
         estimatedMinutes: form.estimatedMinutes ? Number(form.estimatedMinutes) : undefined,
-        description: form.description || undefined,
+        description: nextDescription,
         learningObjectives: form.learningObjectives || undefined,
         contentUrl: form.contentUrl || undefined,
         contentBody: form.contentBody || undefined,
@@ -95,6 +133,7 @@ export default function AdminModules() {
       await load();
       if (!selectedId) {
         setForm(emptyForm);
+        setDescriptionMeta({ mode: 'plain', raw: null });
       }
     } catch {
       setError('Failed to save module');
@@ -147,7 +186,7 @@ export default function AdminModules() {
             <div>
               <label className="small">Mode</label>
               <select className="input" value={form.mode} onChange={(event) => setForm((current) => ({ ...current, mode: event.target.value }))}>
-                {['INDIVIDUAL', 'FACILITATED', 'HYBRID'].map((mode) => (
+              {['INDIVIDUAL', 'FACILITATED', 'HYBRID'].map((mode) => (
                   <option key={mode} value={mode}>{mode}</option>
                 ))}
               </select>
@@ -163,6 +202,11 @@ export default function AdminModules() {
             <div>
               <label className="small">Description</label>
               <textarea className="input" rows={3} value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} />
+              {descriptionMeta.mode === 'structured' && (
+                <p className="small" style={{ marginTop: 8 }}>
+                  This module uses structured legacy content. Editing this field updates the overview text only.
+                </p>
+              )}
             </div>
             <div>
               <label className="small">Learning objectives</label>

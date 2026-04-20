@@ -9,6 +9,39 @@ const statusText = {
   COMPLETED: 'Completed'
 };
 
+function safeJsonParse(value) {
+  if (!value || typeof value !== 'string') return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
+function getModuleSummary(module) {
+  const parsedDescription = safeJsonParse(module.description);
+  if (parsedDescription?.overview) return parsedDescription.overview;
+
+  const parsedBody = safeJsonParse(module.contentBody);
+  if (parsedBody?.subtitle) return parsedBody.subtitle;
+
+  return module.description || '';
+}
+
+function formatDuration(seconds) {
+  if (seconds === null || seconds === undefined) return '';
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  if (!mins) return `${secs}s`;
+  if (!secs) return `${mins}m`;
+  return `${mins}m ${secs}s`;
+}
+
+function renderAssessmentSummary(summary) {
+  if (!summary || summary.totalQuestions === null || summary.totalQuestions === undefined) return null;
+  return `${summary.score}/${summary.totalQuestions} correct | ${summary.attempts} attempt${summary.attempts === 1 ? '' : 's'} | ${formatDuration(summary.durationSeconds)}`;
+}
+
 export default function LearnerTraining() {
   const [items, setItems] = useState([]);
   const [report, setReport] = useState(null);
@@ -17,6 +50,7 @@ export default function LearnerTraining() {
   const [notes, setNotes] = useState({});
   const [busyId, setBusyId] = useState('');
   const [openModuleId, setOpenModuleId] = useState('');
+  const [assessmentSummaries, setAssessmentSummaries] = useState({});
 
   async function load() {
     setLoading(true);
@@ -29,6 +63,12 @@ export default function LearnerTraining() {
       setItems(assignmentData || []);
       setReport(reportData);
       setNotes(Object.fromEntries((assignmentData || []).map((item) => [item.id, item.learnerNotes || ''])));
+      setAssessmentSummaries(Object.fromEntries((assignmentData || []).map((item) => [item.id, item.assessmentTotalQuestions !== null && item.assessmentTotalQuestions !== undefined ? {
+        score: item.assessmentScore,
+        totalQuestions: item.assessmentTotalQuestions,
+        attempts: item.assessmentAttempts,
+        durationSeconds: item.assessmentDurationSeconds
+      } : null])));
     } catch {
       setError('Failed to load your required training');
     } finally {
@@ -47,7 +87,10 @@ export default function LearnerTraining() {
     try {
       await api(`/training/${id}/${action}`, {
         method: 'POST',
-        body: JSON.stringify({ learnerNotes: notes[id] || '' })
+        body: JSON.stringify({
+          learnerNotes: notes[id] || '',
+          ...(action === 'submit' && assessmentSummaries[id] ? { assessmentSummary: assessmentSummaries[id] } : {})
+        })
       });
       await load();
     } catch {
@@ -101,6 +144,9 @@ export default function LearnerTraining() {
                 Assigned by {item.assignedBy?.name || 'Supervisor'} on {new Date(item.assignedAt).toLocaleDateString()}
               </p>
               {item.module.estimatedMinutes && <p className="small">Estimated duration: {item.module.estimatedMinutes} minutes</p>}
+              {renderAssessmentSummary(assessmentSummaries[item.id]) && (
+                <p className="small">Assessment: {renderAssessmentSummary(assessmentSummaries[item.id])}</p>
+              )}
             </div>
             <button
               className={`btn ${openModuleId === item.id ? 'secondary' : ''}`}
@@ -112,7 +158,7 @@ export default function LearnerTraining() {
 
           {(item.module.description || item.module.learningObjectives || item.module.contentUrl || item.module.contentBody) && (
             <div className="grid" style={{ gap: 10, marginTop: 14 }}>
-              {item.module.description && <p>{item.module.description}</p>}
+              {getModuleSummary(item.module) && <p>{getModuleSummary(item.module)}</p>}
               {item.module.learningObjectives && (
                 <div>
                   <div className="small">Learning objectives</div>
@@ -127,7 +173,11 @@ export default function LearnerTraining() {
               {openModuleId === item.id && (
                 <div className="grid" style={{ gap: 8 }}>
                   <div className="small">Interactive module</div>
-                  <ModulePlayer module={item.module} />
+                  <ModulePlayer
+                    module={item.module}
+                    initialAssessmentSummary={assessmentSummaries[item.id]}
+                    onAssessmentChange={(summary) => setAssessmentSummaries((current) => ({ ...current, [item.id]: summary }))}
+                  />
                 </div>
               )}
             </div>
@@ -179,6 +229,9 @@ export default function LearnerTraining() {
                   <div style={{ fontWeight: 700 }}>{item.module.title}</div>
                   <div className="small">Completed {item.reviewedAt ? new Date(item.reviewedAt).toLocaleDateString() : 'recently'}</div>
                   {item.reviewNotes && <div className="small">Supervisor notes: {item.reviewNotes}</div>}
+                  {renderAssessmentSummary(item.assessmentSummary || assessmentSummaries[item.id]) && (
+                    <div className="small">Assessment: {renderAssessmentSummary(item.assessmentSummary || assessmentSummaries[item.id])}</div>
+                  )}
                 </div>
                 <span className="badge">{statusText[item.status] || item.status}</span>
               </div>

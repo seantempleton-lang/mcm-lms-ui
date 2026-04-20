@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import { clearToken } from '../api';
 
 function Icon({ children }) {
@@ -61,11 +61,14 @@ export default function Layout({ me, children }) {
     <>
       <div className="topbar compact">
         <div className="topbar-inner compact">
-          <a className="brand-lockup centered" href="/">
+          <Link className="brand-lockup centered" to="/">
             <img
-              src="/"/>
+              src="/McMillanDrilling-logo-transparent.png"
+              alt="McMillan Drilling"
+              style={{ height: 34, width: 'auto' }}
+            />
             <span className="brand-title">LMS</span>
-          </a>
+          </Link>
           <div className="brand-subtitle centered">{me?.name} | {me?.role}</div>
         </div>
       </div>
