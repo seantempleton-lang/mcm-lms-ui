@@ -51,9 +51,14 @@ export default function Layout({ me, children }) {
               </NavLink>
             </>)}
             {me?.role === 'ADMIN' && (
-              <NavLink className={({ isActive }) => `chip ${isActive ? 'active' : ''}`} to="/admin/users">
-                Users
-              </NavLink>
+              <>
+                <NavLink className={({ isActive }) => `chip ${isActive ? 'active' : ''}`} to="/admin/users">
+                  Users
+                </NavLink>
+                <NavLink className={({ isActive }) => `chip ${isActive ? 'active' : ''}`} to="/admin/modules">
+                  Modules
+                </NavLink>
+              </>
             )}
             {me?.role === 'LEARNER' && (
               <NavLink className={({ isActive }) => `chip ${isActive ? 'active' : ''}`} to="/my-learning">

@@ -48,6 +48,9 @@ export default function Dashboard({ me }) {
             <Link className="btn secondary" to="/admin/users">
               User Management
             </Link>
+            <Link className="btn secondary" to="/admin/modules">
+              Module Management
+            </Link>
           </div>
         </div>
       )}

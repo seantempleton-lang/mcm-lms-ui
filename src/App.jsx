@@ -5,6 +5,7 @@ import SessionsList from './pages/SessionsList.jsx';
 import SessionRun from './pages/SessionRun.jsx';
 import CompetenciesView from './pages/CompetenciesView.jsx';
 import AdminUsers from './pages/AdminUsers.jsx';
+import AdminModules from './pages/AdminModules.jsx';
 import MatrixView from './pages/MatrixView.jsx';
 import LearnerTraining from './pages/LearnerTraining.jsx';
 import SupervisorTraining from './pages/SupervisorTraining.jsx';
@@ -102,6 +103,14 @@ export default function App() {
           element={
             <RequireRole me={me} roles={['ADMIN']}>
               <AdminUsers />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/modules"
+          element={
+            <RequireRole me={me} roles={['ADMIN']}>
+              <AdminModules />
             </RequireRole>
           }
         />
