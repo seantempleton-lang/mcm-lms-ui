@@ -813,22 +813,6 @@ button, input, select, textarea { font: inherit; }
   letter-spacing: 0.01em;
 }
 
-.module-builder-layout {
-  display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
-  gap: 18px;
-  align-items: start;
-}
-
-.module-builder-sidebar {
-  position: sticky;
-  top: 92px;
-}
-
-.module-builder-main {
-  min-width: 0;
-}
-
 .module-list-item {
   display: grid;
   gap: 8px;
@@ -942,14 +926,6 @@ button, input, select, textarea { font: inherit; }
 
   .module-slide-copy {
     min-height: 0;
-  }
-
-  .module-builder-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .module-builder-sidebar {
-    position: static;
   }
 
   .module-competency-row {

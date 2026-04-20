@@ -508,8 +508,8 @@ export default function AdminModules() {
         {error && <p style={{ color: 'var(--bad)', marginTop: 12 }}>{error}</p>}
       </div>
 
-      <div className="module-builder-layout">
-        <div className="card module-builder-sidebar">
+      <div className="grid">
+        <div className="card">
           <div className="h2">Existing modules</div>
           {loading ? <p className="small">Loading...</p> : (
             <div className="grid" style={{ gap: 10 }}>
@@ -549,7 +549,7 @@ export default function AdminModules() {
           )}
         </div>
 
-        <div className="grid module-builder-main" style={{ gap: 18 }}>
+        <div className="grid" style={{ gap: 18 }}>
           <div className="card">
             <div className="h2">{selectedId ? 'Edit module' : 'New module'}</div>
             <form className="grid" onSubmit={saveModule}>
