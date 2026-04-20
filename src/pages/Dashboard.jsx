@@ -1,23 +1,62 @@
 import { Link } from 'react-router-dom';
-export default function Dashboard({ me }){
+
+export default function Dashboard({ me }) {
   return (
-    <div className="grid two">
-      <div className="card">
+    <div className="grid">
+
+      {/* Welcome card */}
+      <div className="card" style={{ borderTop: '3px solid var(--mcm-red)' }}>
         <div className="h1">Welcome, {me.name}</div>
-        <div className="row"><span className="badge">Role: {me.role}</span><span className="badge">{me.email}</span></div>
-        <p className="small" style={{marginTop:12}}>Supervisor workflows are enabled.</p>
+        <div className="row" style={{ marginTop: 6, gap: 8 }}>
+          <span className="badge">{me.role}</span>
+          <span className="badge">{me.email}</span>
+        </div>
       </div>
-      {(me.role==='SUPERVISOR'||me.role==='ADMIN') ? (
+
+      {/* Supervisor / Admin modules */}
+      {(me.role === 'SUPERVISOR' || me.role === 'ADMIN') && (
         <div className="card">
           <div className="h2">Supervisor</div>
-          <div className="grid">
-            <Link className="btn" to="/supervisor/sessions">Sessions</Link>
-            <Link className="btn secondary" to="/supervisor/competencies">Competencies</Link>
+          <p className="small" style={{ marginBottom: 16 }}>
+            Manage training sessions, review competencies and track team progress.
+          </p>
+          <div className="grid two" style={{ gap: 12 }}>
+            <Link className="btn" to="/supervisor/sessions">
+              Sessions
+            </Link>
+            <Link className="btn secondary" to="/supervisor/competencies">
+              Competencies
+            </Link>
+            <Link className="btn secondary" to="/supervisor/matrix">
+              Competency Matrix
+            </Link>
           </div>
         </div>
-      ) : (
-        <div className="card"><div className="h2">Learner</div><p className="small">Learner dashboards later.</p></div>
       )}
+
+      {/* Admin-only modules */}
+      {me.role === 'ADMIN' && (
+        <div className="card">
+          <div className="h2">Administration</div>
+          <p className="small" style={{ marginBottom: 16 }}>
+            Manage user accounts and system settings.
+          </p>
+          <div className="grid two" style={{ gap: 12 }}>
+            <Link className="btn secondary" to="/admin/users">
+              User Management
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Learner section */}
+      {me.role === 'LEARNER' && (
+        <div className="card">
+          <div className="h2">My Learning</div>
+          <p className="small">Your personal dashboard is coming soon.</p>
+        </div>
+      )}
+
     </div>
   );
 }
