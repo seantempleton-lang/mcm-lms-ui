@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 
-const ROLES = ['ADMIN', 'SUPERVISOR', 'LEARNER'];
-
 const emptyForm = { name: '', email: '', role: 'LEARNER', password: '' };
 
 function Modal({ title, onClose, children }) {
@@ -15,7 +13,7 @@ function Modal({ title, onClose, children }) {
       <div className="card" style={{ width: '100%', maxWidth: 480 }}>
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div className="h2" style={{ margin: 0 }}>{title}</div>
-          <button className="btn ghost" onClick={onClose}>✕</button>
+          <button className="btn ghost" onClick={onClose}>X</button>
         </div>
         {children}
       </div>
@@ -28,57 +26,73 @@ export default function AdminUsers() {
   const [q, setQ] = useState('');
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
-  const [modal, setModal] = useState(null); // 'create' | 'edit' | 'delete'
+  const [modal, setModal] = useState(null);
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [formErr, setFormErr] = useState('');
 
   async function load(search = '') {
-    setLoading(true); setErr('');
+    setLoading(true);
+    setErr('');
     try {
       const data = await api(`/admin/users${search ? `?q=${encodeURIComponent(search)}` : ''}`);
       setUsers(data || []);
-    } catch { setErr('Failed to load users'); }
-    finally { setLoading(false); }
+    } catch {
+      setErr('Failed to load users');
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { load(); }, []);
 
   function openCreate() {
-    setForm(emptyForm); setFormErr(''); setModal('create');
+    setForm(emptyForm);
+    setFormErr('');
+    setModal('create');
   }
 
   function openEdit(user) {
     setSelected(user);
     setForm({ name: user.name, email: user.email, role: user.role, password: '' });
-    setFormErr(''); setModal('edit');
+    setFormErr('');
+    setModal('edit');
   }
 
   function openDelete(user) {
-    setSelected(user); setModal('delete');
+    setSelected(user);
+    setModal('delete');
   }
 
   function closeModal() {
-    setModal(null); setSelected(null); setFormErr('');
+    setModal(null);
+    setSelected(null);
+    setFormErr('');
   }
 
-  async function handleCreate(e) {
-    e.preventDefault(); setSaving(true); setFormErr('');
+  async function handleCreate(event) {
+    event.preventDefault();
+    setSaving(true);
+    setFormErr('');
     try {
       await api('/admin/users', {
         method: 'POST',
         body: JSON.stringify(form)
       });
-      closeModal(); await load(q);
-    } catch (ex) {
-      setFormErr(ex.message || 'Failed to create user');
-    } finally { setSaving(false); }
+      closeModal();
+      await load(q);
+    } catch (error) {
+      setFormErr(error.message || 'Failed to create user');
+    } finally {
+      setSaving(false);
+    }
   }
 
-  async function handleEdit(e) {
-    e.preventDefault(); setSaving(true); setFormErr('');
-    // Only send password if filled in
+  async function handleEdit(event) {
+    event.preventDefault();
+    setSaving(true);
+    setFormErr('');
     const payload = { name: form.name, email: form.email, role: form.role };
     if (form.password) payload.password = form.password;
     try {
@@ -86,21 +100,27 @@ export default function AdminUsers() {
         method: 'PATCH',
         body: JSON.stringify(payload)
       });
-      closeModal(); await load(q);
-    } catch (ex) {
-      setFormErr(ex.message || 'Failed to update user');
-    } finally { setSaving(false); }
+      closeModal();
+      await load(q);
+    } catch (error) {
+      setFormErr(error.message || 'Failed to update user');
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleDelete() {
     setSaving(true);
     try {
       await api(`/admin/users/${selected.id}`, { method: 'DELETE' });
-      closeModal(); await load(q);
-    } catch (ex) {
-      setErr(ex.message || 'Failed to delete user');
       closeModal();
-    } finally { setSaving(false); }
+      await load(q);
+    } catch (error) {
+      setErr(error.message || 'Failed to delete user');
+      closeModal();
+    } finally {
+      setSaving(false);
+    }
   }
 
   const roleBadgeColor = (role) => ({
@@ -123,11 +143,12 @@ export default function AdminUsers() {
       <div className="card">
         <div className="row" style={{ alignItems: 'center' }}>
           <input
-            className="input" style={{ flex: 1 }}
+            className="input"
+            style={{ flex: 1 }}
             placeholder="Search by name or email..."
             value={q}
-            onChange={e => setQ(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && load(q)}
+            onChange={(event) => setQ(event.target.value)}
+            onKeyDown={(event) => event.key === 'Enter' && load(q)}
           />
           <button className="btn secondary" onClick={() => load(q)}>Search</button>
           {q && <button className="btn ghost" onClick={() => { setQ(''); load(''); }}>Clear</button>}
@@ -139,22 +160,24 @@ export default function AdminUsers() {
           <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                {['Name', 'Email', 'Role', 'Created', 'Actions'].map(h => (
-                  <th key={h} className="th" style={{ textAlign: 'left', padding: '8px 12px',
-                    borderBottom: '1px solid var(--line)', color: 'var(--muted)', fontSize: '0.85rem' }}>
-                    {h}
+                {['Name', 'Email', 'Role', 'Created', 'Actions'].map((heading) => (
+                  <th
+                    key={heading}
+                    className="th"
+                    style={{ textAlign: 'left', padding: '8px 12px', borderBottom: '1px solid var(--line)', color: 'var(--muted)', fontSize: '0.85rem' }}
+                  >
+                    {heading}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {users.map(user => (
+              {users.map((user) => (
                 <tr key={user.id} className="tr" style={{ borderBottom: '1px solid var(--line)' }}>
                   <td style={{ padding: '10px 12px', fontWeight: 700 }}>{user.name}</td>
                   <td style={{ padding: '10px 12px' }} className="small">{user.email}</td>
                   <td style={{ padding: '10px 12px' }}>
-                    <span className="badge" style={{ color: roleBadgeColor(user.role),
-                      borderColor: roleBadgeColor(user.role) + '55' }}>
+                    <span className="badge" style={{ color: roleBadgeColor(user.role), borderColor: `${roleBadgeColor(user.role)}55` }}>
                       {user.role}
                     </span>
                   </td>
@@ -163,26 +186,33 @@ export default function AdminUsers() {
                   </td>
                   <td style={{ padding: '10px 12px' }}>
                     <div className="row" style={{ gap: 8 }}>
-                      <button className="btn ghost" style={{ padding: '6px 12px', fontSize: '0.85rem' }}
-                        onClick={() => openEdit(user)}>Edit</button>
-                      <button className="btn ghost" style={{ padding: '6px 12px', fontSize: '0.85rem',
-                        color: 'var(--bad)', borderColor: 'rgba(248,113,113,0.3)' }}
-                        onClick={() => openDelete(user)}>Delete</button>
+                      <button className="btn ghost" style={{ padding: '6px 12px', fontSize: '0.85rem' }} onClick={() => openEdit(user)}>
+                        Edit
+                      </button>
+                      <button
+                        className="btn ghost"
+                        style={{ padding: '6px 12px', fontSize: '0.85rem', color: 'var(--bad)', borderColor: 'rgba(248,113,113,0.3)' }}
+                        onClick={() => openDelete(user)}
+                      >
+                        Delete
+                      </button>
                     </div>
                   </td>
                 </tr>
               ))}
               {!users.length && (
-                <tr><td colSpan={5} style={{ padding: 24, textAlign: 'center' }} className="small">
-                  No users found.
-                </td></tr>
+                <tr>
+                  <td colSpan={5} style={{ padding: 24, textAlign: 'center' }} className="small">
+                    No users found.
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
         )}
       </div>
 
-      {/* ── Create modal ── */}
+      {/* Create modal */}
       {modal === 'create' && (
         <Modal title="New user" onClose={closeModal}>
           <form className="grid" onSubmit={handleCreate}>
@@ -198,9 +228,9 @@ export default function AdminUsers() {
         </Modal>
       )}
 
-      {/* ── Edit modal ── */}
+      {/* Edit modal */}
       {modal === 'edit' && selected && (
-        <Modal title={`Edit — ${selected.name}`} onClose={closeModal}>
+        <Modal title={`Edit - ${selected.name}`} onClose={closeModal}>
           <form className="grid" onSubmit={handleEdit}>
             <UserFormFields form={form} setForm={setForm} isCreate={false} />
             {formErr && <p style={{ color: 'var(--bad)', fontSize: '0.9rem' }}>{formErr}</p>}
@@ -214,7 +244,7 @@ export default function AdminUsers() {
         </Modal>
       )}
 
-      {/* ── Delete confirmation ── */}
+      {/* Delete confirmation */}
       {modal === 'delete' && selected && (
         <Modal title="Delete user" onClose={closeModal}>
           <p style={{ marginBottom: 20 }}>
@@ -223,9 +253,12 @@ export default function AdminUsers() {
           </p>
           <div className="row" style={{ justifyContent: 'flex-end' }}>
             <button className="btn ghost" onClick={closeModal}>Cancel</button>
-            <button className="btn" disabled={saving}
+            <button
+              className="btn"
+              disabled={saving}
               style={{ background: 'var(--bad)', color: '#fff' }}
-              onClick={handleDelete}>
+              onClick={handleDelete}
+            >
               {saving ? 'Deleting...' : 'Delete'}
             </button>
           </div>
@@ -236,32 +269,35 @@ export default function AdminUsers() {
 }
 
 function UserFormFields({ form, setForm, isCreate }) {
-  const f = (field, val) => setForm(c => ({ ...c, [field]: val }));
+  const updateField = (field, value) => setForm((current) => ({ ...current, [field]: value }));
   return (
     <>
       <div>
         <label className="small">Full name</label>
-        <input className="input" required value={form.name}
-          onChange={e => f('name', e.target.value)} />
+        <input className="input" required value={form.name} onChange={(event) => updateField('name', event.target.value)} />
       </div>
       <div>
         <label className="small">Email</label>
-        <input className="input" type="email" required value={form.email}
-          onChange={e => f('email', e.target.value)} />
+        <input className="input" type="email" required value={form.email} onChange={(event) => updateField('email', event.target.value)} />
       </div>
       <div>
         <label className="small">Role</label>
-        <select className="input" value={form.role} onChange={e => f('role', e.target.value)}>
-          {['ADMIN', 'SUPERVISOR', 'LEARNER'].map(r =>
-            <option key={r} value={r}>{r}</option>
-          )}
+        <select className="input" value={form.role} onChange={(event) => updateField('role', event.target.value)}>
+          {['ADMIN', 'SUPERVISOR', 'LEARNER'].map((role) => (
+            <option key={role} value={role}>{role}</option>
+          ))}
         </select>
       </div>
       <div>
         <label className="small">{isCreate ? 'Password' : 'New password (leave blank to keep current)'}</label>
-        <input className="input" type="password" required={isCreate}
-          minLength={8} value={form.password}
-          onChange={e => f('password', e.target.value)} />
+        <input
+          className="input"
+          type="password"
+          required={isCreate}
+          minLength={8}
+          value={form.password}
+          onChange={(event) => updateField('password', event.target.value)}
+        />
       </div>
     </>
   );

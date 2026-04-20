@@ -6,6 +6,8 @@ import SessionRun from './pages/SessionRun.jsx';
 import CompetenciesView from './pages/CompetenciesView.jsx';
 import AdminUsers from './pages/AdminUsers.jsx';
 import MatrixView from './pages/MatrixView.jsx';
+import LearnerTraining from './pages/LearnerTraining.jsx';
+import SupervisorTraining from './pages/SupervisorTraining.jsx';
 import Layout from './components/Layout.jsx';
 import RequireRole from './components/RequireRole.jsx';
 import { useMe } from './auth.js';
@@ -64,6 +66,14 @@ export default function App() {
           }
         />
         <Route
+          path="/supervisor/training"
+          element={
+            <RequireRole me={me} roles={['SUPERVISOR', 'ADMIN']}>
+              <SupervisorTraining />
+            </RequireRole>
+          }
+        />
+        <Route
           path="/supervisor/competencies"
           element={
             <RequireRole me={me} roles={['SUPERVISOR', 'ADMIN']}>
@@ -76,6 +86,14 @@ export default function App() {
           element={
             <RequireRole me={me} roles={['SUPERVISOR', 'ADMIN']}>
               <MatrixView />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/my-learning"
+          element={
+            <RequireRole me={me} roles={['LEARNER']}>
+              <LearnerTraining />
             </RequireRole>
           }
         />

@@ -37,6 +37,9 @@ export default function Layout({ me, children }) {
               Dashboard
             </NavLink>
             {(me?.role === 'SUPERVISOR' || me?.role === 'ADMIN') && (<>
+              <NavLink className={({ isActive }) => `chip ${isActive ? 'active' : ''}`} to="/supervisor/training">
+                Required Training
+              </NavLink>
               <NavLink className={({ isActive }) => `chip ${isActive ? 'active' : ''}`} to="/supervisor/sessions">
                 Sessions
               </NavLink>
@@ -50,6 +53,11 @@ export default function Layout({ me, children }) {
             {me?.role === 'ADMIN' && (
               <NavLink className={({ isActive }) => `chip ${isActive ? 'active' : ''}`} to="/admin/users">
                 Users
+              </NavLink>
+            )}
+            {me?.role === 'LEARNER' && (
+              <NavLink className={({ isActive }) => `chip ${isActive ? 'active' : ''}`} to="/my-learning">
+                My Learning
               </NavLink>
             )}
             <button className="chip" onClick={logout}>Logout</button>

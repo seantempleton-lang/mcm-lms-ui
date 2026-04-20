@@ -100,6 +100,15 @@ export default function SessionRun() {
     }));
   }
 
+  function resetAss(userId, competencyId) {
+    const key = `${userId}|${competencyId}`;
+    const persisted = persistedAssessments[key] || { outcome: '', notes: '' };
+    setAssessments((current) => ({
+      ...current,
+      [key]: persisted
+    }));
+  }
+
   async function searchUsers() {
     try {
       const data = await api(`/users?q=${encodeURIComponent(q)}`);
@@ -347,8 +356,8 @@ export default function SessionRun() {
                             />
                             <span className="small">Needs follow-up</span>
                           </label>
-                          <button className="btn ghost" onClick={() => setAss(attendee.userId, competency.id, { outcome: '', notes: '' })}>
-                            Clear
+                          <button className="btn ghost" onClick={() => resetAss(attendee.userId, competency.id)}>
+                            Reset
                           </button>
                         </div>
                         <div style={{ marginTop: 10 }}>

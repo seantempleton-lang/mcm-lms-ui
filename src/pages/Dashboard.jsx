@@ -18,9 +18,12 @@ export default function Dashboard({ me }) {
         <div className="card">
           <div className="h2">Supervisor</div>
           <p className="small" style={{ marginBottom: 16 }}>
-            Manage training sessions, review competencies and track team progress.
+            Assign required training, review learner completions, and track team progress.
           </p>
           <div className="grid two" style={{ gap: 12 }}>
+            <Link className="btn" to="/supervisor/training">
+              Required Training
+            </Link>
             <Link className="btn" to="/supervisor/sessions">
               Sessions
             </Link>
@@ -53,7 +56,10 @@ export default function Dashboard({ me }) {
       {me.role === 'LEARNER' && (
         <div className="card">
           <div className="h2">My Learning</div>
-          <p className="small">Your personal dashboard is coming soon.</p>
+          <p className="small" style={{ marginBottom: 16 }}>Track assigned modules, update progress, and submit work for supervisor review.</p>
+          <Link className="btn" to="/my-learning">
+            Open My Learning
+          </Link>
         </div>
       )}
 
