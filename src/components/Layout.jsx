@@ -79,3 +79,60 @@ export default function Layout({ me, children }) {
           />
         )}
 
+        <aside className={`sidebar rail ${isMobile ? 'mobile' : 'desktop'} ${mobileExpanded ? 'expanded' : ''}`}>
+          {isMobile && (
+            <button
+              className="rail-handle"
+              onClick={() => setSidebarOpen((current) => !current)}
+              aria-label="Toggle navigation"
+            >
+              <span className="rail-handle-icon">|||</span>
+            </button>
+          )}
+
+          <div className="sidebar-group">
+            <div className="sidebar-label">Workspace</div>
+            <NavItem to="/" icon={<DashboardIcon />} onNavigate={handleNavigate}>Dashboard</NavItem>
+          </div>
+
+          {(me?.role === 'SUPERVISOR' || me?.role === 'ADMIN') && (
+            <div className="sidebar-group">
+              <div className="sidebar-label">Supervisor</div>
+              <NavItem to="/supervisor/training"     icon={<TrainingIcon />}   onNavigate={handleNavigate}>Required Training</NavItem>
+              <NavItem to="/supervisor/modules"      icon={<ModulesIcon />}    onNavigate={handleNavigate}>Modules</NavItem>
+              <NavItem to="/supervisor/competencies" icon={<CompetencyIcon />} onNavigate={handleNavigate}>Competencies</NavItem>
+              <NavItem to="/supervisor/matrix"       icon={<MatrixIcon />}     onNavigate={handleNavigate}>Matrix</NavItem>
+              <NavItem to="/supervisor/sessions"     icon={<SessionIcon />}    onNavigate={handleNavigate}>Sessions</NavItem>
+            </div>
+          )}
+
+          {me?.role === 'ADMIN' && (
+            <div className="sidebar-group">
+              <div className="sidebar-label">Administration</div>
+              <NavItem to="/admin/modules" icon={<ModulesIcon />} onNavigate={handleNavigate}>Modules</NavItem>
+              <NavItem to="/admin/users"   icon={<UsersIcon />}   onNavigate={handleNavigate}>Users</NavItem>
+            </div>
+          )}
+
+          {me?.role === 'LEARNER' && (
+            <div className="sidebar-group">
+              <div className="sidebar-label">Learner</div>
+              <NavItem to="/my-learning" icon={<LearningIcon />} onNavigate={handleNavigate}>My Learning</NavItem>
+            </div>
+          )}
+
+          <div className="sidebar-group sidebar-footer">
+            <button className="side-link side-button" onClick={logout} title="Logout">
+              <LogoutIcon />
+              <span className="side-link-text">Logout</span>
+            </button>
+          </div>
+        </aside>
+
+        <main className="content-area">
+          <div className="container">{children}</div>
+        </main>
+      </div>
+    </>
+  );
+}
