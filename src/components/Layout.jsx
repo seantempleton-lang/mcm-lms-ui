@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { useState } from 'react';
+import { NavLink } from 'react-router-dom';
 import { clearToken } from '../api';
 
 function Icon({ children }) {
@@ -44,14 +44,13 @@ function LearningIcon() {
   return <Icon><path d="M12 6v12" /><path d="M6 12h12" /><circle cx="12" cy="12" r="9" /></Icon>;
 }
 
-function NavItem({ to, icon, children, collapsed, onNavigate }) {
+function LogoutIcon() {
+  return <Icon><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="M16 17l5-5-5-5" /><path d="M21 12H9" /></Icon>;
+}
+
+function NavItem({ to, icon, children }) {
   return (
-    <NavLink
-      className={({ isActive }) => `side-link ${isActive ? 'active' : ''} ${collapsed ? 'collapsed' : ''}`}
-      to={to}
-      title={collapsed ? children : undefined}
-      onClick={onNavigate}
-    >
+    <NavLink className={({ isActive }) => `side-link ${isActive ? 'active' : ''}`} to={to} title={children}>
       {icon}
       <span className="side-link-text">{children}</span>
     </NavLink>
@@ -60,95 +59,72 @@ function NavItem({ to, icon, children, collapsed, onNavigate }) {
 
 export default function Layout({ me, children }) {
   const logout = () => { clearToken(); window.location.href = '/login'; };
-  const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 980);
-
-  useEffect(() => {
-    function handleResize() {
-      const mobile = window.innerWidth <= 980;
-      setIsMobile(mobile);
-      if (!mobile) {
-        setSidebarOpen(false);
-      }
-    }
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  useEffect(() => {
-    if (isMobile) {
-      setSidebarOpen(false);
-    }
-  }, [location.pathname, isMobile]);
-
-  const showSidebar = !isMobile || sidebarOpen;
-
-  function toggleSidebar() {
-    if (isMobile) {
-      setSidebarOpen((current) => !current);
-    } else {
-      setSidebarCollapsed((current) => !current);
-    }
-  }
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
   return (
     <>
-      <div className="topbar">
-        <div className="topbar-inner">
-          <div className="topbar-left">
-            <button className="chip sidebar-toggle" onClick={toggleSidebar} aria-label="Toggle sidebar">
-              {isMobile ? (sidebarOpen ? 'Close' : 'Menu') : (sidebarCollapsed ? 'Expand' : 'Collapse')}
-            </button>
-            <a className="brand-lockup" href="/">
-              <img
-                src="/McMillanDrilling-logo-transparent.png"
-                alt="McMillan Drilling"
-                style={{ height: 34, filter: 'brightness(0) invert(1)' }}
-              />
-              <div className="brand-copy">
-                <span className="brand-title">McMillan LMS</span>
-                <span className="brand-subtitle">{me?.name} | {me?.role}</span>
-              </div>
-            </a>
-          </div>
-          <button className="chip logout-chip" onClick={logout}>Logout</button>
+      <div className="topbar compact">
+        <div className="topbar-inner compact">
+          <a className="brand-lockup centered" href="/">
+            <img
+              src="/McMillanDrilling-logo-transparent.png"
+              alt="McMillan Drilling"
+              style={{ height: 30, filter: 'brightness(0) invert(1)' }}
+            />
+            <span className="brand-title">LMS</span>
+          </a>
+          <div className="brand-subtitle centered">{me?.name} | {me?.role}</div>
         </div>
       </div>
 
-      <div className={`app-shell ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-        {isMobile && showSidebar && <button className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} aria-label="Close sidebar" />}
-        <aside className={`sidebar ${showSidebar ? 'open' : ''} ${sidebarCollapsed && !isMobile ? 'collapsed' : ''}`}>
+      <div className={`app-shell rail-shell ${sidebarExpanded ? 'sidebar-expanded' : ''}`}>
+        <aside
+          className={`sidebar rail ${sidebarExpanded ? 'expanded' : 'collapsed'}`}
+          onMouseEnter={() => setSidebarExpanded(true)}
+          onMouseLeave={() => setSidebarExpanded(false)}
+          onFocus={() => setSidebarExpanded(true)}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) {
+              setSidebarExpanded(false);
+            }
+          }}
+        >
           <div className="sidebar-group">
-            <div className="sidebar-label">{sidebarCollapsed && !isMobile ? 'WS' : 'Workspace'}</div>
-            <NavItem to="/" icon={<DashboardIcon />} collapsed={sidebarCollapsed && !isMobile} onNavigate={() => isMobile && setSidebarOpen(false)}>Dashboard</NavItem>
+            <div className="sidebar-label">Workspace</div>
+            <NavItem to="/" icon={<DashboardIcon />}>Dashboard</NavItem>
           </div>
 
           {(me?.role === 'SUPERVISOR' || me?.role === 'ADMIN') && (
             <div className="sidebar-group">
-              <div className="sidebar-label">{sidebarCollapsed && !isMobile ? 'SV' : 'Supervisor'}</div>
-              <NavItem to="/supervisor/training" icon={<TrainingIcon />} collapsed={sidebarCollapsed && !isMobile} onNavigate={() => isMobile && setSidebarOpen(false)}>Required Training</NavItem>
-              <NavItem to="/supervisor/competencies" icon={<CompetencyIcon />} collapsed={sidebarCollapsed && !isMobile} onNavigate={() => isMobile && setSidebarOpen(false)}>Competencies</NavItem>
-              <NavItem to="/supervisor/matrix" icon={<MatrixIcon />} collapsed={sidebarCollapsed && !isMobile} onNavigate={() => isMobile && setSidebarOpen(false)}>Matrix</NavItem>
-              <NavItem to="/supervisor/sessions" icon={<SessionIcon />} collapsed={sidebarCollapsed && !isMobile} onNavigate={() => isMobile && setSidebarOpen(false)}>Sessions</NavItem>
+              <div className="sidebar-label">Supervisor</div>
+              <NavItem to="/supervisor/training" icon={<TrainingIcon />}>Required Training</NavItem>
+              <NavItem to="/supervisor/competencies" icon={<CompetencyIcon />}>Competencies</NavItem>
+              <NavItem to="/supervisor/matrix" icon={<MatrixIcon />}>Matrix</NavItem>
+              <NavItem to="/supervisor/sessions" icon={<SessionIcon />}>Sessions</NavItem>
             </div>
           )}
 
           {me?.role === 'ADMIN' && (
             <div className="sidebar-group">
-              <div className="sidebar-label">{sidebarCollapsed && !isMobile ? 'AD' : 'Administration'}</div>
-              <NavItem to="/admin/modules" icon={<ModulesIcon />} collapsed={sidebarCollapsed && !isMobile} onNavigate={() => isMobile && setSidebarOpen(false)}>Modules</NavItem>
-              <NavItem to="/admin/users" icon={<UsersIcon />} collapsed={sidebarCollapsed && !isMobile} onNavigate={() => isMobile && setSidebarOpen(false)}>Users</NavItem>
+              <div className="sidebar-label">Administration</div>
+              <NavItem to="/admin/modules" icon={<ModulesIcon />}>Modules</NavItem>
+              <NavItem to="/admin/users" icon={<UsersIcon />}>Users</NavItem>
             </div>
           )}
 
           {me?.role === 'LEARNER' && (
             <div className="sidebar-group">
-              <div className="sidebar-label">{sidebarCollapsed && !isMobile ? 'LR' : 'Learner'}</div>
-              <NavItem to="/my-learning" icon={<LearningIcon />} collapsed={sidebarCollapsed && !isMobile} onNavigate={() => isMobile && setSidebarOpen(false)}>My Learning</NavItem>
+              <div className="sidebar-label">Learner</div>
+              <NavItem to="/my-learning" icon={<LearningIcon />}>My Learning</NavItem>
             </div>
           )}
+
+          <div className="sidebar-group sidebar-footer">
+            <button className="side-link side-button" onClick={logout} title="Logout">
+              <LogoutIcon />
+              <span className="side-link-text">Logout</span>
+            </button>
+          </div>
         </aside>
 
         <main className="content-area">
