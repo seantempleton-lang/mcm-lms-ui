@@ -20,6 +20,13 @@ const CATEGORY_OPTIONS = [
   { value: 'ADMIN', label: 'Administration & Compliance' },
 ];
 
+const EVIDENCE_TYPE_OPTIONS = [
+  { value: 'COMPLETION', label: 'Completion' },
+  { value: 'QUIZ', label: 'Quiz' },
+  { value: 'SESSION', label: 'Session' },
+  { value: 'SIGNOFF', label: 'Sign-off' },
+];
+
 const SLIDE_TYPES = [
   { value: 'hero', label: 'Hero' },
   { value: 'content', label: 'Content' },
@@ -40,6 +47,7 @@ function createEmptySlide(type = 'content') {
     body: '',
     bullets: [],
     checklist: [],
+    meta: [],
     fact: '',
     tone: 'default'
   };
@@ -59,6 +67,16 @@ function createEmptyBuilder() {
   return {
     slides: [createEmptySlide('hero')],
     quiz: [createEmptyQuizQuestion()]
+  };
+}
+
+function createEmptyCompetencyDraft(category = 'GEOTECH') {
+  return {
+    code: '',
+    title: '',
+    category,
+    description: '',
+    evidenceType: 'COMPLETION'
   };
 }
 
@@ -112,6 +130,7 @@ function normaliseSlide(slide, index) {
     body: slide.body || '',
     bullets: slide.bullets || [],
     checklist: slide.checklist || [],
+    meta: slide.meta || [],
     fact: slide.fact || '',
     tone: slide.tone || 'default'
   };
@@ -191,6 +210,7 @@ function buildStructuredContent(form, builder) {
     body: slide.type === 'bullets' || slide.type === 'checklist' ? '' : slide.body || '',
     bullets: slide.type === 'bullets' ? slide.bullets.filter(Boolean) : [],
     checklist: slide.type === 'checklist' ? slide.checklist.filter(Boolean) : [],
+    meta: (slide.meta || []).filter(Boolean),
     fact: slide.fact || '',
     tone: slide.tone || 'default'
   }));
@@ -215,10 +235,14 @@ function buildStructuredContent(form, builder) {
 
 export default function AdminModules() {
   const [modules, setModules] = useState([]);
+  const [competencies, setCompetencies] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [builder, setBuilder] = useState(createEmptyBuilder());
+  const [moduleCompetencies, setModuleCompetencies] = useState([]);
+  const [competencyDraft, setCompetencyDraft] = useState(createEmptyCompetencyDraft());
   const [descriptionMeta, setDescriptionMeta] = useState({ mode: 'plain', raw: null });
   const [selectedId, setSelectedId] = useState('');
+  const [previewModuleId, setPreviewModuleId] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -227,8 +251,12 @@ export default function AdminModules() {
     setLoading(true);
     setError('');
     try {
-      const data = await api('/modules');
-      setModules(data || []);
+      const [moduleData, competencyData] = await Promise.all([
+        api('/modules'),
+        api('/competencies')
+      ]);
+      setModules(moduleData || []);
+      setCompetencies(competencyData || []);
     } catch {
       setError('Failed to load modules');
     } finally {
@@ -242,6 +270,8 @@ export default function AdminModules() {
     setSelectedId('');
     setForm(emptyForm);
     setBuilder(createEmptyBuilder());
+    setModuleCompetencies([]);
+    setCompetencyDraft(createEmptyCompetencyDraft());
     setDescriptionMeta({ mode: 'plain', raw: null });
   }
 
@@ -264,7 +294,51 @@ export default function AdminModules() {
       contentUrl: item.contentUrl || ''
     });
     setBuilder(deriveBuilderFromModule(item));
+    setModuleCompetencies((item.competencies || []).map((mapping) => ({
+      competencyId: mapping.competencyId || mapping.competency?.id,
+      evidenceType: mapping.evidenceType || 'COMPLETION'
+    })));
+    setCompetencyDraft(createEmptyCompetencyDraft(item.category || 'GEOTECH'));
     setDescriptionMeta({ mode: descriptionState.mode, raw: descriptionState.raw });
+  }
+
+  function toggleModuleCompetency(competencyId) {
+    setModuleCompetencies((current) => {
+      const exists = current.some((item) => item.competencyId === competencyId);
+      if (exists) return current.filter((item) => item.competencyId !== competencyId);
+      return [...current, { competencyId, evidenceType: 'COMPLETION' }];
+    });
+  }
+
+  function updateModuleCompetency(competencyId, patch) {
+    setModuleCompetencies((current) => current.map((item) => item.competencyId === competencyId ? { ...item, ...patch } : item));
+  }
+
+  async function createAndAssignCompetency() {
+    setError('');
+    try {
+      const competency = await api('/competencies', {
+        method: 'POST',
+        body: JSON.stringify({
+          code: competencyDraft.code,
+          title: competencyDraft.title,
+          category: competencyDraft.category,
+          description: competencyDraft.description || undefined
+        })
+      });
+
+      setCompetencies((current) => [...current, competency].sort((a, b) =>
+        (a.category || '').localeCompare(b.category || '') ||
+        (a.code || '').localeCompare(b.code || '')
+      ));
+      setModuleCompetencies((current) => [
+        ...current,
+        { competencyId: competency.id, evidenceType: competencyDraft.evidenceType }
+      ]);
+      setCompetencyDraft(createEmptyCompetencyDraft(form.category));
+    } catch {
+      setError('Failed to create competency');
+    }
   }
 
   function updateSlide(slideId, patch) {
@@ -272,6 +346,33 @@ export default function AdminModules() {
       ...current,
       slides: current.slides.map((slide) => slide.id === slideId ? { ...slide, ...patch } : slide)
     }));
+  }
+
+  function moveSlide(slideId, direction) {
+    setBuilder((current) => {
+      const index = current.slides.findIndex((slide) => slide.id === slideId);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= current.slides.length) return current;
+      const slides = [...current.slides];
+      [slides[index], slides[target]] = [slides[target], slides[index]];
+      return { ...current, slides };
+    });
+  }
+
+  function duplicateSlide(slideId) {
+    setBuilder((current) => {
+      const index = current.slides.findIndex((slide) => slide.id === slideId);
+      if (index < 0) return current;
+      const original = current.slides[index];
+      const clone = {
+        ...original,
+        id: createId('slide'),
+        title: original.title ? `${original.title} (Copy)` : ''
+      };
+      const slides = [...current.slides];
+      slides.splice(index + 1, 0, clone);
+      return { ...current, slides };
+    });
   }
 
   function removeSlide(slideId) {
@@ -293,6 +394,33 @@ export default function AdminModules() {
       ...current,
       quiz: current.quiz.map((question) => question.id === questionId ? { ...question, ...patch } : question)
     }));
+  }
+
+  function moveQuizQuestion(questionId, direction) {
+    setBuilder((current) => {
+      const index = current.quiz.findIndex((question) => question.id === questionId);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= current.quiz.length) return current;
+      const quiz = [...current.quiz];
+      [quiz[index], quiz[target]] = [quiz[target], quiz[index]];
+      return { ...current, quiz };
+    });
+  }
+
+  function duplicateQuizQuestion(questionId) {
+    setBuilder((current) => {
+      const index = current.quiz.findIndex((question) => question.id === questionId);
+      if (index < 0) return current;
+      const original = current.quiz[index];
+      const clone = {
+        ...original,
+        id: createId('quiz'),
+        question: original.question ? `${original.question} (Copy)` : ''
+      };
+      const quiz = [...current.quiz];
+      quiz.splice(index + 1, 0, clone);
+      return { ...current, quiz };
+    });
   }
 
   function removeQuizQuestion(questionId) {
@@ -331,10 +459,18 @@ export default function AdminModules() {
           method: 'PATCH',
           body: JSON.stringify(payload)
         });
+        await api(`/modules/${selectedId}/competencies`, {
+          method: 'PUT',
+          body: JSON.stringify({ items: moduleCompetencies })
+        });
       } else {
-        await api('/modules', {
+        const createdModule = await api('/modules', {
           method: 'POST',
           body: JSON.stringify(payload)
+        });
+        await api(`/modules/${createdModule.id}/competencies`, {
+          method: 'PUT',
+          body: JSON.stringify({ items: moduleCompetencies })
         });
       }
 
@@ -356,6 +492,14 @@ export default function AdminModules() {
     contentBody: buildStructuredContent(form, builder)
   }), [form, builder]);
 
+  const selectedPreviewModule = useMemo(() => {
+    if (!previewModuleId) return null;
+    if (previewModuleId === '__draft__') return previewModule;
+    return modules.find((module) => module.id === previewModuleId) || null;
+  }, [modules, previewModule, previewModuleId]);
+
+  const assignedCompetencyIds = useMemo(() => new Set(moduleCompetencies.map((item) => item.competencyId)), [moduleCompetencies]);
+
   return (
     <div className="grid">
       <div className="card">
@@ -364,33 +508,48 @@ export default function AdminModules() {
         {error && <p style={{ color: 'var(--bad)', marginTop: 12 }}>{error}</p>}
       </div>
 
-      <div className="grid two">
-        <div className="card">
+      <div className="module-builder-layout">
+        <div className="card module-builder-sidebar">
           <div className="h2">Existing modules</div>
           {loading ? <p className="small">Loading...</p> : (
             <div className="grid" style={{ gap: 10 }}>
-              <button className={`btn ghost ${!selectedId ? 'active' : ''}`} onClick={resetBuilder}>
+              <button
+                className={`btn ghost ${!selectedId ? 'active' : ''}`}
+                onClick={() => {
+                  resetBuilder();
+                  setPreviewModuleId('__draft__');
+                }}
+              >
                 New module
               </button>
               {modules.map((module) => (
-                <button
-                  key={module.id}
-                  className="btn ghost"
-                  style={{ justifyContent: 'space-between', textAlign: 'left' }}
-                  onClick={() => selectModule(module.id)}
-                >
-                  <span>{module.title}</span>
-                  <div className="row" style={{ gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                    <span className="badge">{categoryLabel(module.category)}</span>
-                    <span className="badge">{module.mode}</span>
+                <div key={module.id} className="module-list-item">
+                  <button
+                    className="btn ghost module-list-select"
+                    style={{ justifyContent: 'space-between', textAlign: 'left' }}
+                    onClick={() => selectModule(module.id)}
+                  >
+                    <span>{module.title}</span>
+                    <div className="row" style={{ gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                      <span className="badge">{categoryLabel(module.category)}</span>
+                      <span className="badge">{module.mode}</span>
+                    </div>
+                  </button>
+                  <div className="module-list-actions">
+                    <button type="button" className="btn ghost" onClick={() => selectModule(module.id)}>
+                      Edit
+                    </button>
+                    <button type="button" className="btn ghost" onClick={() => setPreviewModuleId(module.id)}>
+                      Preview
+                    </button>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           )}
         </div>
 
-        <div className="grid" style={{ gap: 18 }}>
+        <div className="grid module-builder-main" style={{ gap: 18 }}>
           <div className="card">
             <div className="h2">{selectedId ? 'Edit module' : 'New module'}</div>
             <form className="grid" onSubmit={saveModule}>
@@ -447,6 +606,90 @@ export default function AdminModules() {
               <div className="module-builder-panel">
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
+                    <div className="h2" style={{ marginBottom: 4 }}>Competencies</div>
+                    <p className="small">Create new competencies and assign existing ones to this module with the right evidence type.</p>
+                  </div>
+                </div>
+
+                <div className="grid two">
+                  <div className="module-builder-item">
+                    <div className="module-builder-item-title">Create and assign new competency</div>
+                    <div className="grid" style={{ gap: 12, marginTop: 12 }}>
+                      <div className="grid two">
+                        <div>
+                          <label className="small">Code</label>
+                          <input className="input" value={competencyDraft.code} onChange={(event) => setCompetencyDraft((current) => ({ ...current, code: event.target.value }))} />
+                        </div>
+                        <div>
+                          <label className="small">Category</label>
+                          <input className="input" value={competencyDraft.category} onChange={(event) => setCompetencyDraft((current) => ({ ...current, category: event.target.value }))} />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="small">Title</label>
+                        <input className="input" value={competencyDraft.title} onChange={(event) => setCompetencyDraft((current) => ({ ...current, title: event.target.value }))} />
+                      </div>
+                      <div>
+                        <label className="small">Description</label>
+                        <textarea className="input" rows={3} value={competencyDraft.description} onChange={(event) => setCompetencyDraft((current) => ({ ...current, description: event.target.value }))} />
+                      </div>
+                      <div>
+                        <label className="small">Evidence type</label>
+                        <select className="input" value={competencyDraft.evidenceType} onChange={(event) => setCompetencyDraft((current) => ({ ...current, evidenceType: event.target.value }))}>
+                          {EVIDENCE_TYPE_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={createAndAssignCompetency}
+                        disabled={!competencyDraft.code.trim() || !competencyDraft.title.trim() || !competencyDraft.category.trim()}
+                      >
+                        Create and assign competency
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="module-builder-item">
+                    <div className="module-builder-item-title">Assign existing competencies</div>
+                    <div className="grid" style={{ gap: 10, marginTop: 12, maxHeight: 440, overflow: 'auto' }}>
+                      {competencies.map((competency) => {
+                        const assigned = assignedCompetencyIds.has(competency.id);
+                        const mapping = moduleCompetencies.find((item) => item.competencyId === competency.id);
+                        return (
+                          <div key={competency.id} className="module-competency-row">
+                            <label className="module-competency-toggle">
+                              <input type="checkbox" checked={assigned} onChange={() => toggleModuleCompetency(competency.id)} />
+                              <span>
+                                <strong>{competency.code}</strong> - {competency.title}
+                                <span className="small" style={{ display: 'block' }}>{competency.category}</span>
+                              </span>
+                            </label>
+                            {assigned && (
+                              <select
+                                className="input"
+                                style={{ maxWidth: 150 }}
+                                value={mapping?.evidenceType || 'COMPLETION'}
+                                onChange={(event) => updateModuleCompetency(competency.id, { evidenceType: event.target.value })}
+                              >
+                                {EVIDENCE_TYPE_OPTIONS.map((option) => (
+                                  <option key={option.value} value={option.value}>{option.label}</option>
+                                ))}
+                              </select>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="module-builder-panel">
+                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
                     <div className="h2" style={{ marginBottom: 4 }}>Slide builder</div>
                     <p className="small">Create the lesson one visual slide at a time.</p>
                   </div>
@@ -470,6 +713,9 @@ export default function AdminModules() {
                               <option key={type.value} value={type.value}>{type.label}</option>
                             ))}
                           </select>
+                          <button type="button" className="btn ghost" onClick={() => moveSlide(slide.id, -1)} disabled={index === 0}>Up</button>
+                          <button type="button" className="btn ghost" onClick={() => moveSlide(slide.id, 1)} disabled={index === builder.slides.length - 1}>Down</button>
+                          <button type="button" className="btn ghost" onClick={() => duplicateSlide(slide.id)}>Duplicate</button>
                           <button type="button" className="btn ghost" onClick={() => removeSlide(slide.id)}>Remove</button>
                         </div>
                       </div>
@@ -482,6 +728,25 @@ export default function AdminModules() {
                         <div>
                           <label className="small">Fact pill</label>
                           <input className="input" value={slide.fact} onChange={(event) => updateSlide(slide.id, { fact: event.target.value })} />
+                        </div>
+                      </div>
+
+                      <div className="grid two" style={{ marginTop: 12 }}>
+                        <div>
+                          <label className="small">Tone</label>
+                          <select className="input" value={slide.tone} onChange={(event) => updateSlide(slide.id, { tone: event.target.value })}>
+                            <option value="default">Default</option>
+                            <option value="warning">Warning</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="small">Learning focus</label>
+                          <textarea
+                            className="input"
+                            rows={3}
+                            value={joinLineList(slide.meta)}
+                            onChange={(event) => updateSlide(slide.id, { meta: normaliseLineList(event.target.value) })}
+                          />
                         </div>
                       </div>
 
@@ -543,7 +808,12 @@ export default function AdminModules() {
                     <div key={question.id} className="module-builder-item">
                       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
                         <div className="module-builder-item-title">Question {index + 1}</div>
-                        <button type="button" className="btn ghost" onClick={() => removeQuizQuestion(question.id)}>Remove</button>
+                        <div className="row" style={{ gap: 8, alignItems: 'center' }}>
+                          <button type="button" className="btn ghost" onClick={() => moveQuizQuestion(question.id, -1)} disabled={index === 0}>Up</button>
+                          <button type="button" className="btn ghost" onClick={() => moveQuizQuestion(question.id, 1)} disabled={index === builder.quiz.length - 1}>Down</button>
+                          <button type="button" className="btn ghost" onClick={() => duplicateQuizQuestion(question.id)}>Duplicate</button>
+                          <button type="button" className="btn ghost" onClick={() => removeQuizQuestion(question.id)}>Remove</button>
+                        </div>
                       </div>
 
                       <div style={{ marginTop: 12 }}>
@@ -595,14 +865,25 @@ export default function AdminModules() {
               <button className="btn" disabled={saving}>{saving ? 'Saving...' : selectedId ? 'Save module' : 'Create module'}</button>
             </form>
           </div>
-
-          <div className="card">
-            <div className="h2">Learner preview</div>
-            <p className="small" style={{ marginBottom: 14 }}>This is how the structured module will appear when launched by a learner.</p>
-            <ModulePlayer module={previewModule} />
-          </div>
         </div>
       </div>
+
+      {selectedPreviewModule && (
+        <div className="module-preview-overlay" onClick={() => setPreviewModuleId('')}>
+          <div className="module-preview-dialog" onClick={(event) => event.stopPropagation()}>
+            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <div>
+                <div className="h2" style={{ marginBottom: 4 }}>Learner preview</div>
+                <p className="small">This is how the module will appear when launched by a learner.</p>
+              </div>
+              <button type="button" className="btn ghost" onClick={() => setPreviewModuleId('')}>
+                Close
+              </button>
+            </div>
+            <ModulePlayer module={selectedPreviewModule} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

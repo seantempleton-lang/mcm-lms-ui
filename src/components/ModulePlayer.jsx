@@ -147,6 +147,7 @@ function normaliseStructuredDeck(module, parsed) {
       body: slide.body || '',
       bullets: slide.bullets || [],
       checklist: slide.checklist || [],
+      meta: slide.meta || [],
       tone: slide.tone || 'default',
       fact: slide.fact || ''
     })),
