@@ -13,8 +13,8 @@ export default function Login(){
     }catch{ setError('Login failed'); }
   }
   return (
-    <div className="container" style={{maxWidth:420}}>
-      <div className="card" style={{marginTop:'10vh'}}>
+    <div className="container auth-container">
+      <div className="card auth-card">
         <div className="h1">McMillan LMS</div>
         <form onSubmit={submit} className="grid">
           <div><label className="small">Email</label><input className="input" value={email} onChange={e=>setEmail(e.target.value)} /></div>
