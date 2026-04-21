@@ -243,6 +243,7 @@ export default function AdminModules() {
   const [descriptionMeta, setDescriptionMeta] = useState({ mode: 'plain', raw: null });
   const [selectedId, setSelectedId] = useState('');
   const [previewModuleId, setPreviewModuleId] = useState('');
+  const [moduleCategoryFilter, setModuleCategoryFilter] = useState('ALL');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -499,6 +500,10 @@ export default function AdminModules() {
   }, [modules, previewModule, previewModuleId]);
 
   const assignedCompetencyIds = useMemo(() => new Set(moduleCompetencies.map((item) => item.competencyId)), [moduleCompetencies]);
+  const visibleModules = useMemo(() => {
+    if (moduleCategoryFilter === 'ALL') return modules;
+    return modules.filter((module) => module.category === moduleCategoryFilter);
+  }, [modules, moduleCategoryFilter]);
 
   return (
     <div className="grid">
@@ -510,9 +515,23 @@ export default function AdminModules() {
 
       <div className="grid">
         <div className="card">
-          <div className="h2">Existing modules</div>
+          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div className="h2" style={{ marginBottom: 4 }}>Existing modules</div>
+              <p className="small">Filter the catalogue by category, then edit or preview a module.</p>
+            </div>
+            <div style={{ minWidth: 220 }}>
+              <label className="small">Category filter</label>
+              <select className="input" value={moduleCategoryFilter} onChange={(event) => setModuleCategoryFilter(event.target.value)}>
+                <option value="ALL">All categories</option>
+                {CATEGORY_OPTIONS.map((category) => (
+                  <option key={category.value} value={category.value}>{category.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
           {loading ? <p className="small">Loading...</p> : (
-            <div className="grid" style={{ gap: 10 }}>
+            <div className="grid" style={{ gap: 10, marginTop: 16 }}>
               <button
                 className={`btn ghost ${!selectedId ? 'active' : ''}`}
                 onClick={() => {
@@ -522,7 +541,7 @@ export default function AdminModules() {
               >
                 New module
               </button>
-              {modules.map((module) => (
+              {visibleModules.map((module) => (
                 <div key={module.id} className="module-list-item">
                   <button
                     className="btn ghost module-list-select"
@@ -545,6 +564,11 @@ export default function AdminModules() {
                   </div>
                 </div>
               ))}
+              {!visibleModules.length && (
+                <div className="card" style={{ background: 'var(--panel2)' }}>
+                  <p className="small">No modules found for this category.</p>
+                </div>
+              )}
             </div>
           )}
         </div>
