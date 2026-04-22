@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { api } from '../api';
+import { api, resolveApiUrl } from '../api';
 import ModulePlayer from '../components/ModulePlayer.jsx';
 
 const statusText = {
@@ -166,7 +166,7 @@ export default function LearnerTraining() {
                 </div>
               )}
               {item.module.contentUrl && (
-                <a className="btn secondary" href={item.module.contentUrl} target="_blank" rel="noreferrer">
+                <a className="btn secondary" href={resolveApiUrl(item.module.contentUrl)} target="_blank" rel="noreferrer">
                   Open learning material
                 </a>
               )}

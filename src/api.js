@@ -1,4 +1,11 @@
 const API = import.meta.env.VITE_API_URL;
+export function resolveApiUrl(path) {
+  if (!path) return '';
+  if (/^https?:\/\//i.test(path)) return path;
+  if (path.startsWith('/')) return `${API}${path}`;
+  return path;
+}
+
 export async function api(path, opts = {}) {
   const token = localStorage.getItem('token');
   const res = await fetch(`${API}${path}`, {

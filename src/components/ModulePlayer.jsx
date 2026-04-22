@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { resolveApiUrl } from '../api';
 
 const CATEGORY_META = {
   HSE: { accent: '#D0202E', surface: 'linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%)' },
@@ -215,7 +216,7 @@ function SlideMedia({ slide }) {
     <div className="module-media-stack">
       {hasImage && (
         <div className="module-media-card">
-          <img className="module-slide-image" src={slide.imageUrl} alt={slide.imageAlt || slide.title || 'Module image'} />
+          <img className="module-slide-image" src={resolveApiUrl(slide.imageUrl)} alt={slide.imageAlt || slide.title || 'Module image'} />
           {slide.imageCaption && <div className="module-media-caption">{slide.imageCaption}</div>}
         </div>
       )}
@@ -225,18 +226,18 @@ function SlideMedia({ slide }) {
           {isEmbeddableVideo(embedUrl) ? (
             <div className="module-video-frame">
               <iframe
-                src={embedUrl}
+                src={resolveApiUrl(embedUrl)}
                 title={slide.title || 'Module video'}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
               />
             </div>
           ) : isDirectVideoFile(embedUrl) ? (
-            <video className="module-slide-video" controls src={embedUrl}>
+            <video className="module-slide-video" controls src={resolveApiUrl(embedUrl)}>
               Your browser does not support embedded video playback.
             </video>
           ) : (
-            <a className="module-slide-link" href={embedUrl} target="_blank" rel="noreferrer">
+            <a className="module-slide-link" href={resolveApiUrl(embedUrl)} target="_blank" rel="noreferrer">
               Open video
             </a>
           )}
@@ -255,7 +256,7 @@ function SlideLinks({ links = [] }) {
         <a
           key={`${link.url}-${index}`}
           className="module-slide-link"
-          href={link.url}
+          href={resolveApiUrl(link.url)}
           target="_blank"
           rel="noreferrer"
         >
