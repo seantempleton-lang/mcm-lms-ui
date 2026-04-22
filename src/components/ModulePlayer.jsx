@@ -149,10 +149,121 @@ function normaliseStructuredDeck(module, parsed) {
       checklist: slide.checklist || [],
       meta: slide.meta || [],
       tone: slide.tone || 'default',
-      fact: slide.fact || ''
+      fact: slide.fact || '',
+      links: slide.links || [],
+      imageUrl: slide.imageUrl || '',
+      imageAlt: slide.imageAlt || '',
+      imageCaption: slide.imageCaption || '',
+      videoUrl: slide.videoUrl || '',
+      layout: slide.layout || 'stacked'
     })),
     quiz: parsed.quiz || []
   };
+}
+
+function normaliseVideoUrl(url) {
+  if (!url) return null;
+
+  try {
+    const parsed = new URL(url, window.location.origin);
+
+    if (parsed.hostname.includes('youtube.com')) {
+      if (parsed.pathname === '/watch') {
+        const videoId = parsed.searchParams.get('v');
+        return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+      }
+
+      if (parsed.pathname.startsWith('/embed/')) {
+        return url;
+      }
+    }
+
+    if (parsed.hostname === 'youtu.be') {
+      const videoId = parsed.pathname.replace('/', '');
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+    }
+
+    if (parsed.hostname.includes('vimeo.com') && !parsed.hostname.includes('player.vimeo.com')) {
+      const videoId = parsed.pathname.split('/').filter(Boolean)[0];
+      return videoId ? `https://player.vimeo.com/video/${videoId}` : url;
+    }
+
+    return url;
+  } catch {
+    return url;
+  }
+}
+
+function isEmbeddableVideo(url) {
+  if (!url) return false;
+  return /youtube\.com|youtu\.be|vimeo\.com|player\.vimeo\.com/i.test(url);
+}
+
+function isDirectVideoFile(url) {
+  if (!url) return false;
+  return /\.(mp4|webm|ogg)(\?.*)?$/i.test(url);
+}
+
+function SlideMedia({ slide }) {
+  const embedUrl = normaliseVideoUrl(slide.videoUrl);
+  const hasImage = Boolean(slide.imageUrl);
+  const hasVideo = Boolean(embedUrl);
+
+  if (!hasImage && !hasVideo) return null;
+
+  return (
+    <div className="module-media-stack">
+      {hasImage && (
+        <div className="module-media-card">
+          <img className="module-slide-image" src={slide.imageUrl} alt={slide.imageAlt || slide.title || 'Module image'} />
+          {slide.imageCaption && <div className="module-media-caption">{slide.imageCaption}</div>}
+        </div>
+      )}
+
+      {hasVideo && (
+        <div className="module-media-card">
+          {isEmbeddableVideo(embedUrl) ? (
+            <div className="module-video-frame">
+              <iframe
+                src={embedUrl}
+                title={slide.title || 'Module video'}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
+          ) : isDirectVideoFile(embedUrl) ? (
+            <video className="module-slide-video" controls src={embedUrl}>
+              Your browser does not support embedded video playback.
+            </video>
+          ) : (
+            <a className="module-slide-link" href={embedUrl} target="_blank" rel="noreferrer">
+              Open video
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SlideLinks({ links = [] }) {
+  if (!links.length) return null;
+
+  return (
+    <div className="module-slide-links">
+      {links.map((link, index) => (
+        <a
+          key={`${link.url}-${index}`}
+          className="module-slide-link"
+          href={link.url}
+          target="_blank"
+          rel="noreferrer"
+        >
+          {link.label || 'Open document'}
+        </a>
+      ))}
+    </div>
+  );
 }
 
 function getDeck(module) {
@@ -161,34 +272,48 @@ function getDeck(module) {
   return parseLegacyDeck(module);
 }
 
-function SlideContent({ slide }) {
+function SlideContent({ slide, includeMedia = true }) {
   if (slide.type === 'checklist') {
     return (
-      <div className="module-slide-grid">
-        {slide.checklist.map((item, index) => (
-          <div key={`${item}-${index}`} className="module-check-item">
-            <span className="module-check-icon">+</span>
-            <span>{item}</span>
-          </div>
-        ))}
-      </div>
+      <>
+        {includeMedia && <SlideMedia slide={slide} />}
+        <div className="module-slide-grid">
+          {slide.checklist.map((item, index) => (
+            <div key={`${item}-${index}`} className="module-check-item">
+              <span className="module-check-icon">+</span>
+              <span>{item}</span>
+            </div>
+          ))}
+        </div>
+        <SlideLinks links={slide.links} />
+      </>
     );
   }
 
   if (slide.type === 'bullets') {
     return (
-      <div className="module-slide-grid">
-        {slide.bullets.map((item, index) => (
-          <div key={`${item}-${index}`} className="module-bullet">
-            <span className="module-bullet-index">{String(index + 1).padStart(2, '0')}</span>
-            <span>{item}</span>
-          </div>
-        ))}
-      </div>
+      <>
+        {includeMedia && <SlideMedia slide={slide} />}
+        <div className="module-slide-grid">
+          {slide.bullets.map((item, index) => (
+            <div key={`${item}-${index}`} className="module-bullet">
+              <span className="module-bullet-index">{String(index + 1).padStart(2, '0')}</span>
+              <span>{item}</span>
+            </div>
+          ))}
+        </div>
+        <SlideLinks links={slide.links} />
+      </>
     );
   }
 
-  return <p className="module-body-copy">{slide.body}</p>;
+  return (
+    <>
+      {includeMedia && <SlideMedia slide={slide} />}
+      <p className="module-body-copy">{slide.body}</p>
+      <SlideLinks links={slide.links} />
+    </>
+  );
 }
 
 function QuizView({ quiz, answers, setAnswers, submitted, setSubmitted, onGrade, attempts }) {
@@ -288,6 +413,7 @@ export default function ModulePlayer({ module, onAssessmentChange, initialAssess
   const progressTotal = slideCount + (hasQuiz ? 1 : 0);
   const progress = ((step + 1) / Math.max(progressTotal, 1)) * 100;
   const slide = deck.slides[Math.min(step, slideCount - 1)];
+  const useTwoColumnMedia = slide?.layout === 'two-column' && (slide?.imageUrl || slide?.videoUrl);
 
   useEffect(() => {
     if (onQuiz && !quizStartedAt) {
@@ -346,15 +472,21 @@ export default function ModulePlayer({ module, onAssessmentChange, initialAssess
         />
       ) : (
         <div className={`module-player-shell ${slide?.tone === 'warning' ? 'tone-warning' : ''}`}>
-          <div className="module-slide-frame">
+          <div className={`module-slide-frame ${slide?.layout === 'two-column' ? 'media-two-column' : ''}`}>
             <div className="module-slide-copy">
               <div className="module-eyebrow">{slide?.eyebrow}</div>
               <div className="module-slide-title">{slide?.title}</div>
               {slide?.fact && <div className="module-fact-pill">{slide.fact}</div>}
-              <SlideContent slide={slide} />
+              <SlideContent slide={slide} includeMedia={!useTwoColumnMedia} />
             </div>
 
             <div className="module-slide-side">
+              {useTwoColumnMedia && (
+                <div className="module-side-card module-side-media">
+                  <SlideMedia slide={slide} />
+                </div>
+              )}
+
               <div className="module-side-card">
                 <div className="small">Estimated duration</div>
                 <div className="module-side-value">{module.estimatedMinutes ? `${module.estimatedMinutes} min` : 'Self-paced'}</div>

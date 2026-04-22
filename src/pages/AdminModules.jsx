@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api';
 import ModulePlayer from '../components/ModulePlayer.jsx';
 
@@ -49,7 +49,13 @@ function createEmptySlide(type = 'content') {
     checklist: [],
     meta: [],
     fact: '',
-    tone: 'default'
+    tone: 'default',
+    imageUrl: '',
+    imageAlt: '',
+    imageCaption: '',
+    videoUrl: '',
+    layout: 'stacked',
+    links: []
   };
 }
 
@@ -132,7 +138,13 @@ function normaliseSlide(slide, index) {
     checklist: slide.checklist || [],
     meta: slide.meta || [],
     fact: slide.fact || '',
-    tone: slide.tone || 'default'
+    tone: slide.tone || 'default',
+    imageUrl: slide.imageUrl || '',
+    imageAlt: slide.imageAlt || '',
+    imageCaption: slide.imageCaption || '',
+    videoUrl: slide.videoUrl || '',
+    layout: slide.layout || 'stacked',
+    links: slide.links || []
   };
 }
 
@@ -212,7 +224,16 @@ function buildStructuredContent(form, builder) {
     checklist: slide.type === 'checklist' ? slide.checklist.filter(Boolean) : [],
     meta: (slide.meta || []).filter(Boolean),
     fact: slide.fact || '',
-    tone: slide.tone || 'default'
+    tone: slide.tone || 'default',
+    imageUrl: slide.imageUrl || '',
+    imageAlt: slide.imageAlt || '',
+    imageCaption: slide.imageCaption || '',
+    videoUrl: slide.videoUrl || '',
+    layout: slide.layout || 'stacked',
+    links: (slide.links || []).filter((link) => link?.url).map((link) => ({
+      label: link.label || '',
+      url: link.url
+    }))
   }));
 
   const quiz = builder.quiz
@@ -246,7 +267,13 @@ export default function AdminModules() {
   const [moduleCategoryFilter, setModuleCategoryFilter] = useState('ALL');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingResource, setUploadingResource] = useState(false);
+  const [uploadingSlideMedia, setUploadingSlideMedia] = useState('');
+  const [resourceUploadError, setResourceUploadError] = useState('');
   const [error, setError] = useState('');
+  const resourceInputRef = useRef(null);
+  const slideMediaInputRef = useRef(null);
+  const pendingSlideUploadRef = useRef(null);
 
   async function load() {
     setLoading(true);
@@ -346,6 +373,38 @@ export default function AdminModules() {
     setBuilder((current) => ({
       ...current,
       slides: current.slides.map((slide) => slide.id === slideId ? { ...slide, ...patch } : slide)
+    }));
+  }
+
+  function updateSlideLink(slideId, linkIndex, patch) {
+    setBuilder((current) => ({
+      ...current,
+      slides: current.slides.map((slide) => {
+        if (slide.id !== slideId) return slide;
+        const links = [...(slide.links || [])];
+        links[linkIndex] = { ...links[linkIndex], ...patch };
+        return { ...slide, links };
+      })
+    }));
+  }
+
+  function addSlideLink(slideId) {
+    setBuilder((current) => ({
+      ...current,
+      slides: current.slides.map((slide) => slide.id === slideId ? {
+        ...slide,
+        links: [...(slide.links || []), { label: '', url: '' }]
+      } : slide)
+    }));
+  }
+
+  function removeSlideLink(slideId, linkIndex) {
+    setBuilder((current) => ({
+      ...current,
+      slides: current.slides.map((slide) => slide.id === slideId ? {
+        ...slide,
+        links: (slide.links || []).filter((_, index) => index !== linkIndex)
+      } : slide)
     }));
   }
 
@@ -484,6 +543,84 @@ export default function AdminModules() {
     }
   }
 
+  async function uploadResource(file) {
+    if (!file) return;
+
+    setUploadingResource(true);
+    setResourceUploadError('');
+    setError('');
+
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('resource', file);
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/documents/upload`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData
+      });
+
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(payload?.error || 'Failed to upload resource');
+      }
+
+      setForm((current) => ({ ...current, contentUrl: payload.url || '' }));
+    } catch (uploadError) {
+      setResourceUploadError(uploadError.message || 'Failed to upload resource');
+    } finally {
+      setUploadingResource(false);
+      if (resourceInputRef.current) {
+        resourceInputRef.current.value = '';
+      }
+    }
+  }
+
+  async function uploadSlideMedia(file) {
+    const target = pendingSlideUploadRef.current;
+    if (!file || !target?.slideId || !target?.field) return;
+
+    setUploadingSlideMedia(`${target.slideId}:${target.field}`);
+    setResourceUploadError('');
+    setError('');
+
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('resource', file);
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/documents/upload`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData
+      });
+
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(payload?.error || 'Failed to upload media');
+      }
+
+      updateSlide(target.slideId, { [target.field]: payload.url || '' });
+    } catch (uploadError) {
+      setResourceUploadError(uploadError.message || 'Failed to upload media');
+    } finally {
+      setUploadingSlideMedia('');
+      pendingSlideUploadRef.current = null;
+      if (slideMediaInputRef.current) {
+        slideMediaInputRef.current.value = '';
+      }
+    }
+  }
+
+  function triggerSlideMediaUpload(slideId, field, accept) {
+    pendingSlideUploadRef.current = { slideId, field };
+    if (slideMediaInputRef.current) {
+      slideMediaInputRef.current.accept = accept;
+      slideMediaInputRef.current.click();
+    }
+  }
+
   const previewModule = useMemo(() => ({
     title: form.title || 'Untitled module',
     category: form.category,
@@ -577,6 +714,12 @@ export default function AdminModules() {
           <div className="card">
             <div className="h2">{selectedId ? 'Edit module' : 'New module'}</div>
             <form className="grid" onSubmit={saveModule}>
+              <input
+                ref={slideMediaInputRef}
+                type="file"
+                style={{ display: 'none' }}
+                onChange={(event) => uploadSlideMedia(event.target.files?.[0])}
+              />
               <div className="grid two">
                 <div>
                   <label className="small">Title</label>
@@ -624,7 +767,41 @@ export default function AdminModules() {
 
               <div>
                 <label className="small">Content URL</label>
-                <input className="input" type="url" value={form.contentUrl} onChange={(event) => setForm((current) => ({ ...current, contentUrl: event.target.value }))} />
+                <input
+                  className="input"
+                  type="text"
+                  placeholder="/documents/example.pdf or https://..."
+                  value={form.contentUrl}
+                  onChange={(event) => setForm((current) => ({ ...current, contentUrl: event.target.value }))}
+                />
+                <div className="row" style={{ marginTop: 10, flexWrap: 'wrap' }}>
+                  <input
+                    ref={resourceInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.png,.jpg,.jpeg,.webp,.gif,.svg,.mp4,.webm,.ogg"
+                    style={{ display: 'none' }}
+                    onChange={(event) => uploadResource(event.target.files?.[0])}
+                  />
+                  <button
+                    type="button"
+                    className="btn secondary"
+                    disabled={uploadingResource}
+                    onClick={() => resourceInputRef.current?.click()}
+                  >
+                    {uploadingResource ? 'Uploading...' : 'Upload resource'}
+                  </button>
+                  {form.contentUrl && (
+                    <a className="btn ghost" href={form.contentUrl} target="_blank" rel="noreferrer">
+                      Open current resource
+                    </a>
+                  )}
+                </div>
+                <p className="small" style={{ marginTop: 8 }}>
+                  Uploaded files are stored in the core app persistent storage and returned as `/documents/...` links.
+                </p>
+                {resourceUploadError && (
+                  <p style={{ color: 'var(--bad)', marginTop: 8 }}>{resourceUploadError}</p>
+                )}
               </div>
 
               <div className="module-builder-panel">
@@ -764,6 +941,16 @@ export default function AdminModules() {
                           </select>
                         </div>
                         <div>
+                          <label className="small">Layout</label>
+                          <select className="input" value={slide.layout} onChange={(event) => updateSlide(slide.id, { layout: event.target.value })}>
+                            <option value="stacked">Stacked</option>
+                            <option value="two-column">Two column</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid two" style={{ marginTop: 12 }}>
+                        <div>
                           <label className="small">Learning focus</label>
                           <textarea
                             className="input"
@@ -774,10 +961,106 @@ export default function AdminModules() {
                         </div>
                       </div>
 
-                      <div style={{ marginTop: 12 }}>
-                        <label className="small">Slide title</label>
-                        <input className="input" value={slide.title} onChange={(event) => updateSlide(slide.id, { title: event.target.value })} />
+                    <div style={{ marginTop: 12 }}>
+                      <label className="small">Slide title</label>
+                      <input className="input" value={slide.title} onChange={(event) => updateSlide(slide.id, { title: event.target.value })} />
+                    </div>
+
+                    <div className="grid two" style={{ marginTop: 12 }}>
+                      <div>
+                        <label className="small">Image URL</label>
+                        <div className="row" style={{ gap: 8 }}>
+                          <input
+                            className="input"
+                            type="text"
+                            placeholder="/documents/example.jpg or https://..."
+                            value={slide.imageUrl}
+                            onChange={(event) => updateSlide(slide.id, { imageUrl: event.target.value })}
+                          />
+                          <button
+                            type="button"
+                            className="btn ghost"
+                            disabled={uploadingSlideMedia === `${slide.id}:imageUrl`}
+                            onClick={() => triggerSlideMediaUpload(slide.id, 'imageUrl', '.png,.jpg,.jpeg,.webp,.gif,.svg')}
+                          >
+                            {uploadingSlideMedia === `${slide.id}:imageUrl` ? 'Uploading...' : 'Upload'}
+                          </button>
+                        </div>
                       </div>
+                        <div>
+                          <label className="small">Image alt text</label>
+                          <input
+                            className="input"
+                            value={slide.imageAlt}
+                            onChange={(event) => updateSlide(slide.id, { imageAlt: event.target.value })}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: 12 }}>
+                        <label className="small">Image caption</label>
+                        <input
+                          className="input"
+                          value={slide.imageCaption}
+                          onChange={(event) => updateSlide(slide.id, { imageCaption: event.target.value })}
+                        />
+                      </div>
+
+                    <div style={{ marginTop: 12 }}>
+                      <label className="small">Video URL</label>
+                      <div className="row" style={{ gap: 8 }}>
+                        <input
+                          className="input"
+                          type="text"
+                          placeholder="https://www.youtube.com/watch?v=... or direct video URL"
+                          value={slide.videoUrl}
+                          onChange={(event) => updateSlide(slide.id, { videoUrl: event.target.value })}
+                        />
+                        <button
+                          type="button"
+                          className="btn ghost"
+                          disabled={uploadingSlideMedia === `${slide.id}:videoUrl`}
+                          onClick={() => triggerSlideMediaUpload(slide.id, 'videoUrl', '.mp4,.webm,.ogg')}
+                        >
+                          {uploadingSlideMedia === `${slide.id}:videoUrl` ? 'Uploading...' : 'Upload'}
+                        </button>
+                      </div>
+                      <p className="small" style={{ marginTop: 8 }}>
+                        Supports public video links such as YouTube, Vimeo, or direct `.mp4`/`.webm` files.
+                      </p>
+                    </div>
+
+                    <div style={{ marginTop: 12 }}>
+                      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                        <label className="small">Slide links</label>
+                        <button type="button" className="btn ghost" onClick={() => addSlideLink(slide.id)}>
+                          Add link
+                        </button>
+                      </div>
+                      <div className="grid" style={{ gap: 10, marginTop: 10 }}>
+                        {(slide.links || []).map((link, linkIndex) => (
+                          <div key={`${slide.id}-link-${linkIndex}`} className="grid two">
+                            <input
+                              className="input"
+                              placeholder="Link label"
+                              value={link.label || ''}
+                              onChange={(event) => updateSlideLink(slide.id, linkIndex, { label: event.target.value })}
+                            />
+                            <div className="row" style={{ gap: 8 }}>
+                              <input
+                                className="input"
+                                placeholder="/documents/example.pdf or https://..."
+                                value={link.url || ''}
+                                onChange={(event) => updateSlideLink(slide.id, linkIndex, { url: event.target.value })}
+                              />
+                              <button type="button" className="btn ghost" onClick={() => removeSlideLink(slide.id, linkIndex)}>
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
 
                       {(slide.type === 'content' || slide.type === 'hero') && (
                         <div style={{ marginTop: 12 }}>
