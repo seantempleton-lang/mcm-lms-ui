@@ -71,14 +71,24 @@ button, input, select, textarea { font: inherit; }
   gap: 10px;
 }
 
+.brand-logo {
+  height: 34px;
+  width: auto;
+  display: block;
+  filter: brightness(0) invert(1);
+}
+
 .brand-lockup.centered {
   justify-content: center;
 }
 
 .brand-title {
   color: #fff;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  font-weight: 800;
+  font-size: 1.9rem;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .brand-subtitle {
@@ -905,9 +915,68 @@ button, input, select, textarea { font: inherit; }
   letter-spacing: 0.01em;
 }
 
+.module-workflow-steps {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.module-workflow-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid #d8e0ea;
+  background: rgba(255,255,255,0.72);
+  color: var(--muted);
+}
+
+.module-workflow-step span {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e8eef6;
+  color: var(--mcm-blue);
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.module-workflow-step strong {
+  font-size: 0.9rem;
+}
+
+.module-workflow-step.active,
+.module-workflow-step.complete {
+  color: var(--mcm-blue);
+}
+
+.module-workflow-step.active {
+  border-color: color-mix(in srgb, var(--mcm-blue) 28%, white);
+  background: color-mix(in srgb, var(--mcm-blue) 9%, white);
+  box-shadow: 0 0 0 3px rgba(0, 32, 69, 0.08);
+}
+
+.module-workflow-step.complete span,
+.module-workflow-step.active span {
+  background: var(--mcm-blue);
+  color: white;
+}
+
 .module-list-item {
   display: grid;
   gap: 8px;
+}
+
+.module-list-card {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.84);
 }
 
 .module-list-select {
@@ -919,6 +988,65 @@ button, input, select, textarea { font: inherit; }
   gap: 8px;
   justify-content: flex-end;
   flex-wrap: wrap;
+}
+
+.module-slide-tabs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.module-slide-tab {
+  min-width: 150px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid #d8e0ea;
+  background: rgba(255,255,255,0.88);
+  text-align: left;
+  display: grid;
+  gap: 4px;
+  color: #475569;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.module-slide-tab span {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.module-slide-tab strong {
+  font-size: 0.92rem;
+  color: var(--mcm-blue);
+}
+
+.module-slide-tab:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--mcm-blue) 24%, white);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+}
+
+.module-slide-tab.active {
+  border-color: color-mix(in srgb, var(--mcm-blue) 36%, white);
+  background: color-mix(in srgb, var(--mcm-blue) 8%, white);
+  box-shadow: 0 0 0 3px rgba(0, 32, 69, 0.08);
+}
+
+.module-slide-tab.quiz-tab {
+  border-style: dashed;
+}
+
+.module-page-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #d8e0ea;
 }
 
 .module-preview-overlay {
@@ -1022,6 +1150,18 @@ button, input, select, textarea { font: inherit; }
 
   .module-competency-row {
     flex-direction: column;
+    align-items: stretch;
+  }
+
+  .module-workflow-steps {
+    justify-content: flex-start;
+  }
+
+  .module-slide-tab {
+    min-width: 100%;
+  }
+
+  .module-page-nav {
     align-items: stretch;
   }
 }

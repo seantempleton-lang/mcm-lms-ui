@@ -19,6 +19,7 @@ function CompetencyIcon() { return <Icon><path d="m12 3 7 4v5c0 5-3.5 8-7 9-3.5-
 function MatrixIcon()     { return <Icon><path d="M4 4h16v16H4zM4 10h16M10 4v16" /></Icon>; }
 function UsersIcon()      { return <Icon><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" /><circle cx="9.5" cy="7" r="3" /><path d="M20 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 4.13a3 3 0 0 1 0 5.74" /></Icon>; }
 function ModulesIcon()    { return <Icon><path d="M4 6h7v12H4zM13 6h7v5h-7zM13 13h7v5h-7z" /></Icon>; }
+function ResourcesIcon()  { return <Icon><path d="M5 4h10l4 4v12H5z" /><path d="M15 4v4h4" /><path d="M9 13h6M9 17h6" /></Icon>; }
 function LearningIcon()   { return <Icon><path d="M12 6v12" /><path d="M6 12h12" /><circle cx="12" cy="12" r="9" /></Icon>; }
 function LogoutIcon()     { return <Icon><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="M16 17l5-5-5-5" /><path d="M21 12H9" /></Icon>; }
 
@@ -63,9 +64,9 @@ export default function Layout({ me, children }) {
         <div className="topbar-inner compact">
           <Link className="brand-lockup centered" to="/">
             <img
+              className="brand-logo"
               src="/McMillanDrilling-logo-transparent.png"
               alt="McMillan Drilling"
-              style={{ height: 34, width: 'auto' }}
             />
             <span className="brand-title">LMS</span>
           </Link>
@@ -113,6 +114,7 @@ export default function Layout({ me, children }) {
             <div className="sidebar-group">
               <div className="sidebar-label">Administration</div>
               <NavItem to="/admin/modules" icon={<ModulesIcon />} onNavigate={handleNavigate}>Modules</NavItem>
+              <NavItem to="/admin/resources" icon={<ResourcesIcon />} onNavigate={handleNavigate}>Resources</NavItem>
               <NavItem to="/admin/users"   icon={<UsersIcon />}   onNavigate={handleNavigate}>Users</NavItem>
             </div>
           )}
