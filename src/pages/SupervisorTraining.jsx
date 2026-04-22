@@ -147,7 +147,7 @@ export default function SupervisorTraining() {
               <select className="input" value={form.learnerId} onChange={(event) => setForm((current) => ({ ...current, learnerId: event.target.value }))}>
                 <option value="" disabled>Select learner</option>
                 {learners.map((learner) => (
-                  <option key={learner.id} value={learner.id}>{learner.name} ({learner.email})</option>
+                  <option key={learner.id} value={learner.id}>{learner.name} ({learner.username})</option>
                 ))}
               </select>
             </div>

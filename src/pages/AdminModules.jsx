@@ -315,6 +315,10 @@ export default function AdminModules() {
     setActiveSlideIndex((current) => clampIndex(current, builder.slides.length));
   }, [builder.slides.length]);
 
+  useEffect(() => {
+    setCompetencyDraft((current) => ({ ...current, category: form.category || 'GEOTECH' }));
+  }, [form.category]);
+
   function resetBuilder() {
     setSelectedId('');
     setForm(emptyForm);
@@ -712,6 +716,16 @@ export default function AdminModules() {
     return modules.filter((module) => module.category === moduleCategoryFilter);
   }, [modules, moduleCategoryFilter]);
 
+  const categoryCompetencies = useMemo(
+    () => competencies.filter((competency) => competency.category === form.category),
+    [competencies, form.category],
+  );
+
+  const assignedOutsideCategory = useMemo(
+    () => competencies.filter((competency) => assignedCompetencyIds.has(competency.id) && competency.category !== form.category),
+    [competencies, assignedCompetencyIds, form.category],
+  );
+
   const activeSlide = builder.slides[activeSlideIndex] || builder.slides[0];
   const workflowStepIndex = WORKFLOW_STEPS.findIndex((step) => step.value === workflowStep);
   const selectedModuleTitle = form.title || (selectedId ? 'Untitled module' : 'New module');
@@ -961,7 +975,11 @@ export default function AdminModules() {
                         </div>
                         <div>
                           <label className="small">Category</label>
-                          <input className="input" value={competencyDraft.category} onChange={(event) => setCompetencyDraft((current) => ({ ...current, category: event.target.value }))} />
+                          <select className="input" value={competencyDraft.category} onChange={(event) => setCompetencyDraft((current) => ({ ...current, category: event.target.value }))}>
+                            {CATEGORY_OPTIONS.map((category) => (
+                              <option key={category.value} value={category.value}>{category.label}</option>
+                            ))}
+                          </select>
                         </div>
                       </div>
                       <div>
@@ -994,7 +1012,14 @@ export default function AdminModules() {
                   <div className="module-builder-item">
                     <div className="module-builder-item-title">Assign existing competencies</div>
                     <div className="grid" style={{ gap: 10, marginTop: 12, maxHeight: 440, overflow: 'auto' }}>
-                      {competencies.map((competency) => {
+                      {assignedOutsideCategory.length > 0 && (
+                        <div className="card" style={{ background: 'var(--warn-bg)', borderColor: 'color-mix(in srgb, var(--warn) 32%, white)' }}>
+                          <p className="small" style={{ color: 'var(--warn)' }}>
+                            This module currently has competencies from other categories assigned. They are still attached, but new assignments below are filtered to {categoryLabel(form.category)}.
+                          </p>
+                        </div>
+                      )}
+                      {categoryCompetencies.map((competency) => {
                         const assigned = assignedCompetencyIds.has(competency.id);
                         const mapping = moduleCompetencies.find((item) => item.competencyId === competency.id);
                         return (
@@ -1021,6 +1046,9 @@ export default function AdminModules() {
                           </div>
                         );
                       })}
+                      {!categoryCompetencies.length && (
+                        <p className="small">No competencies exist yet for {categoryLabel(form.category)}.</p>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -77,7 +77,7 @@ export default function SessionRun() {
     return (session?.attendance || []).map((item) => ({
       userId: item.userId,
       name: item.user?.name || item.userId,
-      email: item.user?.email,
+      username: item.user?.username,
       attended: attendance[item.userId] ?? item.attended ?? true
     }));
   }, [session, attendance]);
@@ -253,7 +253,7 @@ export default function SessionRun() {
 
       <div className="card">
         <div className="h2">Add attendee</div>
-        <p className="small">Search by name or email, then add them to this session.</p>
+        <p className="small">Search by name or username, then add them to this session.</p>
         <div className="row" style={{ alignItems: 'center' }}>
           <input
             className="input"
@@ -271,7 +271,7 @@ export default function SessionRun() {
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <div style={{ fontWeight: 700 }}>{user.name} <span className="badge">{user.role}</span></div>
-                    <div className="small">{user.email}</div>
+                    <div className="small">{user.username}</div>
                   </div>
                   <button className="btn" disabled={adding} onClick={() => addAttendee(user)}>Add</button>
                 </div>
@@ -290,7 +290,7 @@ export default function SessionRun() {
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <div style={{ fontWeight: 700 }}>{attendee.name}</div>
-                    <div className="small">{attendee.email || attendee.userId}</div>
+                    <div className="small">{attendee.username || attendee.userId}</div>
                   </div>
                   <label className="toggle">
                     <input

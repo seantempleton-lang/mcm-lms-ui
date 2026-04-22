@@ -9,7 +9,7 @@ export default function Dashboard({ me }) {
         <div className="h1">Welcome, {me.name}</div>
         <div className="row" style={{ marginTop: 6, gap: 8 }}>
           <span className="badge">{me.role}</span>
-          <span className="badge">{me.email}</span>
+          <span className="badge">{me.username}</span>
         </div>
       </div>
 
