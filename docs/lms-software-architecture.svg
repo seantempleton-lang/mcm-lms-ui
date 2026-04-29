@@ -1,0 +1,170 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="920" viewBox="0 0 1400 920" role="img" aria-labelledby="title desc">
+  <title id="title">McMillan LMS software architecture</title>
+  <desc id="desc">Diagram showing browser users, React frontend delivery, LMS Core API backend services, database, and document storage.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#38546b"/>
+    </marker>
+    <style>
+      .canvas { fill: #f6f8fb; }
+      .band { fill: #ffffff; stroke: #cfd9e3; stroke-width: 2; }
+      .band-title { font: 700 22px Arial, sans-serif; fill: #182a3a; }
+      .band-subtitle { font: 400 14px Arial, sans-serif; fill: #5b6b7a; }
+      .box { fill: #ffffff; stroke: #9fb0bf; stroke-width: 2; rx: 8; }
+      .box-blue { fill: #e8f3ff; stroke: #5b8ec2; }
+      .box-green { fill: #e9f6ee; stroke: #5aa06f; }
+      .box-gold { fill: #fff4dc; stroke: #c99b3b; }
+      .box-red { fill: #fdeceb; stroke: #c96b63; }
+      .box-dark { fill: #23384a; stroke: #23384a; }
+      .box-title { font: 700 16px Arial, sans-serif; fill: #182a3a; }
+      .box-title-light { font: 700 16px Arial, sans-serif; fill: #ffffff; }
+      .box-text { font: 400 13px Arial, sans-serif; fill: #3c4d5c; }
+      .box-text-light { font: 400 13px Arial, sans-serif; fill: #eaf1f7; }
+      .small { font: 400 12px Arial, sans-serif; fill: #5b6b7a; }
+      .label { font: 700 12px Arial, sans-serif; fill: #38546b; }
+      .flow { fill: none; stroke: #38546b; stroke-width: 2.2; marker-end: url(#arrow); }
+      .flow-dashed { fill: none; stroke: #6f8191; stroke-width: 2; stroke-dasharray: 7 6; marker-end: url(#arrow); }
+      .storage { fill: #eef1f5; stroke: #8796a4; stroke-width: 2; }
+    </style>
+  </defs>
+
+  <rect class="canvas" width="1400" height="920"/>
+  <text x="60" y="54" font-family="Arial, sans-serif" font-size="30" font-weight="700" fill="#142637">McMillan LMS Software Architecture</text>
+  <text x="60" y="82" class="band-subtitle">Frontend details are from this repository; backend services are inferred from the API endpoints used by the UI.</text>
+
+  <rect x="50" y="120" width="230" height="680" rx="14" class="band"/>
+  <text x="78" y="158" class="band-title">People</text>
+  <text x="78" y="180" class="band-subtitle">Role-specific access</text>
+
+  <rect x="85" y="220" width="160" height="74" rx="8" class="box box-green"/>
+  <text x="165" y="250" text-anchor="middle" class="box-title">Learner</text>
+  <text x="165" y="272" text-anchor="middle" class="box-text">My Learning</text>
+
+  <rect x="85" y="340" width="160" height="74" rx="8" class="box box-blue"/>
+  <text x="165" y="370" text-anchor="middle" class="box-title">Supervisor</text>
+  <text x="165" y="392" text-anchor="middle" class="box-text">Sessions and reviews</text>
+
+  <rect x="85" y="460" width="160" height="74" rx="8" class="box box-gold"/>
+  <text x="165" y="490" text-anchor="middle" class="box-title">Admin</text>
+  <text x="165" y="512" text-anchor="middle" class="box-text">Users and content</text>
+
+  <rect x="330" y="120" width="330" height="680" rx="14" class="band"/>
+  <text x="360" y="158" class="band-title">Browser App</text>
+  <text x="360" y="180" class="band-subtitle">React SPA built with Vite</text>
+
+  <rect x="380" y="215" width="230" height="88" rx="8" class="box box-blue"/>
+  <text x="495" y="246" text-anchor="middle" class="box-title">React LMS UI</text>
+  <text x="495" y="270" text-anchor="middle" class="box-text">Routes, pages, layout</text>
+  <text x="495" y="289" text-anchor="middle" class="box-text">src/App.jsx</text>
+
+  <rect x="380" y="335" width="230" height="88" rx="8" class="box box-green"/>
+  <text x="495" y="366" text-anchor="middle" class="box-title">Role Gate</text>
+  <text x="495" y="390" text-anchor="middle" class="box-text">Learner, Supervisor, Admin</text>
+  <text x="495" y="409" text-anchor="middle" class="box-text">RequireRole.jsx</text>
+
+  <rect x="380" y="455" width="230" height="88" rx="8" class="box box-gold"/>
+  <text x="495" y="486" text-anchor="middle" class="box-title">API Client</text>
+  <text x="495" y="510" text-anchor="middle" class="box-text">JSON fetch wrapper</text>
+  <text x="495" y="529" text-anchor="middle" class="box-text">Bearer token header</text>
+
+  <rect x="380" y="575" width="230" height="88" rx="8" class="box"/>
+  <text x="495" y="606" text-anchor="middle" class="box-title">Module Player</text>
+  <text x="495" y="630" text-anchor="middle" class="box-text">Slides, quiz, media links</text>
+  <text x="495" y="649" text-anchor="middle" class="box-text">ModulePlayer.jsx</text>
+
+  <rect x="380" y="700" width="230" height="50" rx="8" class="box box-red"/>
+  <text x="495" y="731" text-anchor="middle" class="box-title">localStorage token</text>
+
+  <rect x="710" y="120" width="250" height="680" rx="14" class="band"/>
+  <text x="740" y="158" class="band-title">Delivery</text>
+  <text x="740" y="180" class="band-subtitle">Containerized static UI</text>
+
+  <rect x="760" y="230" width="150" height="82" rx="8" class="box box-blue"/>
+  <text x="835" y="260" text-anchor="middle" class="box-title">Vite Build</text>
+  <text x="835" y="284" text-anchor="middle" class="box-text">npm run build</text>
+
+  <rect x="760" y="365" width="150" height="98" rx="8" class="box box-dark"/>
+  <text x="835" y="397" text-anchor="middle" class="box-title-light">Nginx</text>
+  <text x="835" y="421" text-anchor="middle" class="box-text-light">Serves dist</text>
+  <text x="835" y="440" text-anchor="middle" class="box-text-light">Port 8080</text>
+
+  <rect x="760" y="520" width="150" height="72" rx="8" class="box"/>
+  <text x="835" y="550" text-anchor="middle" class="box-title">Health</text>
+  <text x="835" y="574" text-anchor="middle" class="box-text">GET /health</text>
+
+  <rect x="1010" y="120" width="340" height="680" rx="14" class="band"/>
+  <text x="1040" y="158" class="band-title">LMS Core Backend</text>
+  <text x="1040" y="180" class="band-subtitle">API and storage responsibilities</text>
+
+  <rect x="1045" y="220" width="125" height="70" rx="8" class="box box-red"/>
+  <text x="1108" y="249" text-anchor="middle" class="box-title">Auth</text>
+  <text x="1108" y="271" text-anchor="middle" class="box-text">/auth/*</text>
+
+  <rect x="1190" y="220" width="125" height="70" rx="8" class="box box-gold"/>
+  <text x="1253" y="249" text-anchor="middle" class="box-title">Users</text>
+  <text x="1253" y="271" text-anchor="middle" class="box-text">/users</text>
+
+  <rect x="1045" y="320" width="125" height="70" rx="8" class="box box-green"/>
+  <text x="1108" y="349" text-anchor="middle" class="box-title">Modules</text>
+  <text x="1108" y="371" text-anchor="middle" class="box-text">/modules</text>
+
+  <rect x="1190" y="320" width="125" height="70" rx="8" class="box box-green"/>
+  <text x="1253" y="349" text-anchor="middle" class="box-title">Competency</text>
+  <text x="1253" y="371" text-anchor="middle" class="box-text">/competencies</text>
+
+  <rect x="1045" y="420" width="125" height="70" rx="8" class="box box-blue"/>
+  <text x="1108" y="449" text-anchor="middle" class="box-title">Training</text>
+  <text x="1108" y="471" text-anchor="middle" class="box-text">/training</text>
+
+  <rect x="1190" y="420" width="125" height="70" rx="8" class="box box-blue"/>
+  <text x="1253" y="449" text-anchor="middle" class="box-title">Sessions</text>
+  <text x="1253" y="471" text-anchor="middle" class="box-text">/sessions</text>
+
+  <rect x="1045" y="520" width="125" height="70" rx="8" class="box"/>
+  <text x="1108" y="549" text-anchor="middle" class="box-title">Matrix</text>
+  <text x="1108" y="571" text-anchor="middle" class="box-text">/matrix</text>
+
+  <rect x="1190" y="520" width="125" height="70" rx="8" class="box"/>
+  <text x="1253" y="549" text-anchor="middle" class="box-title">Documents</text>
+  <text x="1253" y="571" text-anchor="middle" class="box-text">/documents</text>
+
+  <path d="M1045 675 C1045 652, 1315 652, 1315 675 L1315 740 C1315 763, 1045 763, 1045 740 Z" class="storage"/>
+  <ellipse cx="1180" cy="675" rx="135" ry="23" class="storage"/>
+  <text x="1180" y="704" text-anchor="middle" class="box-title">LMS Database</text>
+  <text x="1180" y="728" text-anchor="middle" class="box-text">users, roles, modules, competencies, assignments, sessions, awards</text>
+
+  <rect x="1110" y="790" width="140" height="60" rx="8" class="box"/>
+  <text x="1180" y="816" text-anchor="middle" class="box-title">File Storage</text>
+  <text x="1180" y="838" text-anchor="middle" class="box-text">uploads and media</text>
+
+  <path d="M245 257 H380" class="flow"/>
+  <path d="M245 377 H380" class="flow"/>
+  <path d="M245 497 H380" class="flow"/>
+  <path d="M495 303 V335" class="flow"/>
+  <path d="M495 423 V455" class="flow"/>
+  <path d="M495 543 V575" class="flow"/>
+  <path d="M495 663 V700" class="flow"/>
+
+  <path d="M610 259 H760" class="flow-dashed"/>
+  <text x="685" y="244" text-anchor="middle" class="label">static assets</text>
+  <path d="M835 312 V365" class="flow"/>
+  <path d="M835 463 V520" class="flow"/>
+
+  <path d="M610 499 C760 499, 850 255, 1045 255" class="flow"/>
+  <text x="835" y="238" text-anchor="middle" class="label">VITE_API_URL http://lms-core.mcm</text>
+  <path d="M610 725 C810 725, 880 555, 1045 555" class="flow-dashed"/>
+  <text x="750" y="707" class="label">contentUrl/imageUrl/videoUrl</text>
+
+  <path d="M1108 290 V650" class="flow"/>
+  <path d="M1253 290 V650" class="flow"/>
+  <path d="M1108 390 V650" class="flow"/>
+  <path d="M1253 390 V650" class="flow"/>
+  <path d="M1108 490 V650" class="flow"/>
+  <path d="M1253 490 V650" class="flow"/>
+  <path d="M1108 590 V650" class="flow"/>
+  <path d="M1253 590 V650" class="flow"/>
+  <path d="M1253 590 V790" class="flow-dashed"/>
+
+  <rect x="60" y="835" width="760" height="46" rx="8" fill="#ffffff" stroke="#cfd9e3"/>
+  <text x="82" y="864" class="small">Key point: the UI is stateless apart from the browser token. Durable learning, competency, session, user, and document records belong to the LMS Core backend.</text>
+</svg>
