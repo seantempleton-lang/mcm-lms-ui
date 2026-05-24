@@ -18,11 +18,15 @@ function safeJsonParse(value) {
   }
 }
 
+function getStructuredContentBody(module) {
+  return module.contentBody && typeof module.contentBody === 'object' ? module.contentBody : null;
+}
+
 function getModuleSummary(module) {
   const parsedDescription = safeJsonParse(module.description);
   if (parsedDescription?.overview) return parsedDescription.overview;
 
-  const parsedBody = safeJsonParse(module.contentBody);
+  const parsedBody = getStructuredContentBody(module);
   if (parsedBody?.subtitle) return parsedBody.subtitle;
 
   return module.description || '';

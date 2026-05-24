@@ -18,6 +18,10 @@ function safeJsonParse(value) {
   }
 }
 
+function getStructuredContentBody(module) {
+  return module.contentBody && typeof module.contentBody === 'object' ? module.contentBody : null;
+}
+
 function normaliseObjectives(value) {
   if (!value) return [];
   return value
@@ -30,7 +34,7 @@ function getModuleSummary(module) {
   const parsedDescription = safeJsonParse(module.description);
   if (parsedDescription?.overview) return parsedDescription.overview;
 
-  const parsedBody = safeJsonParse(module.contentBody);
+  const parsedBody = getStructuredContentBody(module);
   if (parsedBody?.subtitle) return parsedBody.subtitle;
 
   return module.description || '';
@@ -68,72 +72,19 @@ function parseLegacyDeck(module) {
     return { slides, quiz, title: module.title, subtitle: descriptionJson.overview || getModuleSummary(module) };
   }
 
-  const body = module.contentBody || '';
-  const blocks = body
-    .split(/\n\s*\n/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-  if (!blocks.length) {
-    return {
-      slides: [{
-        id: 'module-intro',
-        type: 'hero',
-        eyebrow: module.category || 'Module',
-        title: module.title,
-        body: module.description || 'Open this module to review the learning content.',
-        meta: normaliseObjectives(module.learningObjectives)
-      }],
-      quiz: [],
+  return {
+    slides: [{
+      id: 'module-intro',
+      type: 'hero',
+      eyebrow: module.category || 'Module',
       title: module.title,
-      subtitle: getModuleSummary(module)
-    };
-  }
-
-  const slides = [{
-    id: 'module-intro',
-    type: 'hero',
-    eyebrow: module.category || 'Module',
+      body: module.description || 'Open this module to review the learning content.',
+      meta: normaliseObjectives(module.learningObjectives)
+    }],
+    quiz: [],
     title: module.title,
-    body: module.description || blocks[0],
-    meta: normaliseObjectives(module.learningObjectives)
-  }];
-
-  const quiz = [];
-
-  blocks.forEach((block, index) => {
-    const lines = block.split('\n').map((line) => line.trim()).filter(Boolean);
-    if (!lines.length) return;
-
-    const title = lines[0];
-    const rest = lines.slice(1);
-    const joined = rest.join('\n');
-
-    if (/^quiz section/i.test(title)) {
-      rest
-        .filter((line) => /^\d+\./.test(line))
-        .forEach((line, questionIndex) => {
-          quiz.push({
-            id: `quiz-${index + 1}-${questionIndex + 1}`,
-            type: 'reflection',
-            question: line.replace(/^\d+\.\s*/, '')
-          });
-        });
-      return;
-    }
-
-    const bullets = rest.filter((line) => /^[-\d]/.test(line)).map((line) => line.replace(/^[-\d.]+\s*/, ''));
-    slides.push({
-      id: `slide-${index + 1}`,
-      type: bullets.length >= 2 ? 'bullets' : 'content',
-      eyebrow: `Slide ${slides.length}`,
-      title,
-      body: bullets.length >= 2 ? '' : joined,
-      bullets
-    });
-  });
-
-  return { slides, quiz, title: module.title, subtitle: getModuleSummary(module) };
+    subtitle: getModuleSummary(module)
+  };
 }
 
 function normaliseStructuredDeck(module, parsed) {
@@ -268,7 +219,7 @@ function SlideLinks({ links = [] }) {
 }
 
 function getDeck(module) {
-  const parsedBody = safeJsonParse(module.contentBody);
+  const parsedBody = getStructuredContentBody(module);
   if (parsedBody?.slides?.length) return normaliseStructuredDeck(module, parsedBody);
   return parseLegacyDeck(module);
 }

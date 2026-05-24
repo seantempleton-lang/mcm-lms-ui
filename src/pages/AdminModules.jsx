@@ -105,6 +105,10 @@ function safeJsonParse(value) {
   }
 }
 
+function getStructuredContentBody(module) {
+  return module.contentBody && typeof module.contentBody === 'object' ? module.contentBody : null;
+}
+
 function normaliseLineList(value) {
   return value
     .split('\n')
@@ -166,7 +170,7 @@ function normaliseQuizQuestion(question) {
 }
 
 function deriveBuilderFromModule(module) {
-  const structuredBody = safeJsonParse(module.contentBody);
+  const structuredBody = getStructuredContentBody(module);
   if (structuredBody?.slides?.length) {
     return {
       slides: structuredBody.slides.map(normaliseSlide),
@@ -191,26 +195,6 @@ function deriveBuilderFromModule(module) {
           body: Array.isArray(section.content) ? '' : section.content,
           bullets: Array.isArray(section.content) ? section.content : [],
         }, index + 1)),
-      ],
-      quiz: [],
-    };
-  }
-
-  if (module.contentBody?.trim()) {
-    return {
-      slides: [
-        normaliseSlide({
-          type: 'hero',
-          eyebrow: module.category || 'Module',
-          title: module.title,
-          body: module.description || '',
-        }, 0),
-        normaliseSlide({
-          type: 'content',
-          eyebrow: 'Content',
-          title: 'Module content',
-          body: module.contentBody,
-        }, 1),
       ],
       quiz: [],
     };
@@ -252,12 +236,12 @@ function buildStructuredContent(form, builder) {
     }))
     .filter((question) => question.question && question.options.length >= 2);
 
-  return JSON.stringify({
+  return {
     title: form.title,
     subtitle: form.description || '',
     slides,
     quiz,
-  });
+  };
 }
 
 function clampIndex(value, max) {
